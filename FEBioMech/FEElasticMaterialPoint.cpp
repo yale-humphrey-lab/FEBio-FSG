@@ -34,11 +34,13 @@ FEElasticMaterialPoint::FEElasticMaterialPoint(FEMaterialPointData* mp) : FEMate
 {
 	m_F.unit();
 	m_J = 1;
+	m_J_star = 1;
 	m_s.zero();
     m_v = m_a = m_gradJ = vec3d(0, 0, 0);
     m_buncoupled = false;
     m_Wt = m_Wp = 0;
     m_p = 0;
+    m_Lk = 0;
 }
 
 //-----------------------------------------------------------------------------
@@ -55,6 +57,7 @@ void FEElasticMaterialPoint::Init()
 	m_F.unit();
 
 	m_J = 1;
+	m_J_star = 1;
 
 	m_s.zero();
 
@@ -64,6 +67,7 @@ void FEElasticMaterialPoint::Init()
     m_Wt = m_Wp = 0;
 
     m_p = 0;
+    m_Lk = 0;
     
 	// don't forget to initialize the base class
     FEMaterialPointData::Init();
@@ -73,7 +77,7 @@ void FEElasticMaterialPoint::Init()
 void FEElasticMaterialPoint::Serialize(DumpStream& ar)
 {
 	FEMaterialPointData::Serialize(ar);
-    ar & m_F & m_J & m_s & m_v & m_a & m_gradJ & m_L & m_Wt & m_Wp & m_p;
+    ar & m_F & m_J & m_J_star & m_s & m_v & m_a & m_gradJ & m_L & m_Wt & m_Wp & m_p & m_Lk;
 	ar & m_buncoupled;
 }
 

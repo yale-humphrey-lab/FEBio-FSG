@@ -84,6 +84,7 @@ public:
 	// deformation data at intermediate time
 	mat3d	m_F;	//!< deformation gradient
 	double	m_J;	//!< determinant of F
+	double	m_J_star;	//!< desired J
     vec3d   m_gradJ;  //!< gradient of J
     vec3d   m_v;    //!< velocity
     vec3d   m_a;    //!< acceleration
@@ -100,4 +101,7 @@ public:
     
     // previous time data
     double      m_Wp;       //!< strain energy density
+    
+    // augmented Lagrangian variable
+    double      m_Lk;       //!< strain energy density
 };

@@ -49,6 +49,8 @@ void FE3FieldElasticSolidDomain::ELEM_DATA::Serialize(DumpStream& ar)
 	ar & Lk;
 	ar & eJt;
 	ar & eJp;
+	ar & eJpp;
+	ar & eJ_star;
 }
 
 //-----------------------------------------------------------------------------
@@ -92,7 +94,7 @@ bool FE3FieldElasticSolidDomain::Init()
 	for (int i=0; i<NE; ++i)
 	{
 		ELEM_DATA& d = m_Data[i];
-		d.eJ = d.eJt = d.eJp = 1.0;
+		d.eJ = d.eJt = d.eJp = d.eJ_star = d.eJpp = 1.0;
 		d.ep = 0.0;
 		d.Lk = 0.0;
 	}
@@ -109,7 +111,7 @@ void FE3FieldElasticSolidDomain::Reset()
 	for (size_t i=0; i<NE; ++i)
 	{
 		ELEM_DATA& d = m_Data[i];
-        d.eJ = d.eJt = d.eJp = 1.0;
+        d.eJ = d.eJt = d.eJp = d.eJ_star = d.eJpp = 1.0;
         d.ep = 0.0;
         d.Lk = 0.0;
 	}
@@ -240,12 +242,12 @@ void FE3FieldElasticSolidDomain::ElementDilatationalStiffness(FEModel& fem, int 
 	}
 
 	// get effective modulus
-	double k = pmi->UJJ(ed.eJ);
+	double k = pmi->UJJ(ed.eJ, ed.eJ_star);
 
 	// next, we add the Lagrangian contribution
 	// note that this term will always be zero if the material does not
 	// use the augmented lagrangian
-	k += ed.Lk*pmi->hpp(ed.eJ);
+	k += ed.Lk*pmi->hpp(ed.eJ, ed.eJ_star);
 
 	// divide by initial volume
 	k /= Ve;
@@ -448,6 +450,8 @@ void FE3FieldElasticSolidDomain::ElementGeometricalStiffness(int iel, matrix &ke
 //! This function loops over all elements and updates the stress
 void FE3FieldElasticSolidDomain::Update(const FETimeInfo& tp)
 {
+
+	feLog("FE3FieldElasticSolidDomain Update ----- \n");
 	bool berr = false;
 	int NE = (int) m_Elem.size();
 	#pragma omp parallel for shared(NE, berr)
@@ -507,23 +511,28 @@ void FE3FieldElasticSolidDomain::UpdateElementStress(int iel, const FETimeInfo& 
 	}
 
 	// calculate the average dilatation and pressure
-	double v = 0, vt = 0, V = 0;
+	double v = 0, vt = 0, V = 0, v_star = 0;
 	for (int n=0; n<nint; ++n)
 	{
+		FEMaterialPoint& mp = *el.GetMaterialPoint(n);
+		FEElasticMaterialPoint& pt = *(mp.ExtractData<FEElasticMaterialPoint>());
+
 		v += detJt(el, n, m_alphaf)*gw[n];
         vt+= detJt(el, n)*gw[n];
 		V += detJ0(el, n)*gw[n];
+		v_star += pt.m_J_star;
 	}
 
 	// calculate volume ratio
+	ed.eJ_star = v_star / nint;
 	ed.eJ = v / V;
     ed.eJt = vt / V;
-    double eUt = mat.U(ed.eJt);
-    double eUp = mat.U(ed.eJp);
+    double eUt = mat.U(ed.eJt, ed.eJ_star);
+    double eUp = mat.U(ed.eJp, ed.eJ_star);
 
 	// Calculate pressure. This is a sum of a Lagrangian term and a penalty term
 	//      <--- Lag. mult. -->  <-- penalty -->
-	ed.ep = ed.Lk*mat.hp(ed.eJ) + mat.UJ(ed.eJ);
+	ed.ep = ed.Lk*mat.hp(ed.eJ, ed.eJ_star) + mat.UJ(ed.eJ, ed.eJ_star);
 //	ed.ep = mat.UJ(ed.eJ);
 
 	// loop over the integration points and calculate
@@ -581,9 +590,9 @@ void FE3FieldElasticSolidDomain::UpdateElementStress(int iel, const FETimeInfo& 
 			double Wp = pt.m_Wp;
             mat3ds D = pt.RateOfDeformation();
             double D2 = D.dotdot(D);
-            if (D2 > std::numeric_limits<double>::epsilon())
+            if (D2 > 0)
                 pt.m_s += D*(((Wt-Wp)/(dt*pt.m_J) - pt.m_s.dotdot(D))/D2);
-            if (fabs(ed.eJt - ed.eJp) > std::numeric_limits<double>::epsilon())
+            if (ed.eJt != ed.eJp)
                 pt.m_s += mat3dd((eUt-eUp)/(ed.eJ*(ed.eJt-ed.eJp)));
         }
         else
@@ -615,7 +624,7 @@ bool FE3FieldElasticSolidDomain::Augment(int naug)
 		L0 = ed.Lk;
 		normL0 += L0*L0;
 
-		L1 = L0 + k*pmi->h(ed.eJ);
+		L1 = L0 + k*pmi->h(ed.eJ, ed.eJ_star);
 		normL1 += L1*L1;
 	}
 
@@ -643,9 +652,9 @@ bool FE3FieldElasticSolidDomain::Augment(int naug)
 		{
 			ELEM_DATA& ed = m_Data[n];
 
-			double hi = pmi->h(ed.eJ);
-			ed.Lk += k*pmi->h(ed.eJ);
-			ed.ep = ed.Lk*pmi->hp(ed.eJ) + k*log(ed.eJ)/ed.eJ;
+			double hi = pmi->h(ed.eJ, ed.eJ_star);
+			ed.Lk += k*pmi->h(ed.eJ, ed.eJ_star);
+			ed.ep = ed.Lk*pmi->hp(ed.eJ, ed.eJ_star) + k*log(ed.eJ/ed.eJ_star)/ed.eJ;
 		}
 	}
 

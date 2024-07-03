@@ -493,6 +493,7 @@ bool FEAnalysis::Solve()
 			}
 
 			m_ntsiter = 0;
+			fem.GetTime().currentRestart = m_ntsiter;
 			m_dt = m_dt0;
 
 			// reset retry counter

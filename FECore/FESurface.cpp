@@ -35,6 +35,7 @@ SOFTWARE.*/
 #include "matrix.h"
 #include <FECore/log.h>
 #include "FEModelParam.h"
+#include "FEMesh.h"
 
 //-----------------------------------------------------------------------------
 FESurface::FESurface(FEModel* fem) : FEMeshPartition(FE_DOMAIN_SURFACE, fem)
@@ -1117,6 +1118,26 @@ mat2d FESurface::MetricP(FESurfaceElement& el, int n)
 }
 
 //-----------------------------------------------------------------------------
+//! This function calculates the global location of an integration point in its reference configuration
+//!
+
+vec3d FESurface::Local2Global0(FESurfaceElement &el, int n)
+{
+    FEMesh& m = *m_pMesh;
+    
+    // get the shape functions at this integration point
+    double* H = el.H(n);
+    
+    // calculate the location
+    vec3d r(0);
+    int ne = el.Nodes();
+    if (!m_bshellb) for (int i=0; i<ne; ++i) r += m.Node(el.m_node[i]).m_r0*H[i];
+    else for (int i=0; i<ne; ++i) r += m.Node(el.m_node[i]).s0()*H[i];
+    
+    return r;
+}
+
+//-----------------------------------------------------------------------------
 //! Given an element an the natural coordinates of a point in this element, this
 //! function returns the global position vector.
 vec3d FESurface::Local2Global(FESurfaceElement &el, double r, double s)
@@ -1415,6 +1436,38 @@ void FESurface::CoBaseVectorsP(FESurfaceElement& el, int j, vec3d t[2])
     {
         t[0] += m.Node(el.m_node[i]).m_rp*Hr[i];
         t[1] += m.Node(el.m_node[i]).m_rp*Hs[i];
+    }
+}
+
+//-----------------------------------------------------------------------------
+//! This function calculates the covariant base vectors of a surface element
+//! at an integration point in the reference configuration
+
+void FESurface::CoBaseVectors0(const FESurfaceElement& el, int j, vec3d t[2]) const
+{
+    FEMesh& m = *m_pMesh;
+    
+    // get the nr of nodes
+    int n = el.Nodes();
+    
+    // get the shape function derivatives
+    double* Hr = el.Gr(j);
+    double* Hs = el.Gs(j);
+    
+    t[0] = t[1] = vec3d(0,0,0);
+    if (!m_bshellb) {
+        for (int i=0; i<n; ++i)
+        {
+            t[0] += m.Node(el.m_node[i]).m_r0*Hr[i];
+            t[1] += m.Node(el.m_node[i]).m_r0*Hs[i];
+        }
+    }
+    else {
+        for (int i=0; i<n; ++i)
+        {
+            t[0] -= m.Node(el.m_node[i]).s0()*Hr[i];
+            t[1] -= m.Node(el.m_node[i]).s0()*Hs[i];
+        }
     }
 }
 
@@ -2521,4 +2574,47 @@ void FESurface::ProjectToNodes(FEParamDouble& pd, std::vector<double>& d)
     // evaluate average
     for (int i=0; i<Nodes(); ++i)
         if (nd[i]) d[i] /= nd[i];
+}
+
+FECORE_API double CalculateSurfaceVolume(FESurface& s)
+{
+	// get the mesh
+	FEMesh& mesh = *s.GetMesh();
+
+	// loop over all elements
+	double vol = 0.0;
+	int NE = s.Elements();
+	vec3d x[FEElement::MAX_NODES];
+	for (int i = 0; i < NE; ++i)
+	{
+		// get the next element
+		FESurfaceElement& el = s.Element(i);
+
+		// get the nodal coordinates
+		int neln = el.Nodes();
+		for (int j = 0; j < neln; ++j) x[j] = mesh.Node(el.m_node[j]).m_rt;
+
+		// loop over integration points
+		double* w = el.GaussWeights();
+		int nint = el.GaussPoints();
+		for (int n = 0; n < nint; ++n)
+		{
+			// evaluate the position vector at this point
+			vec3d r = el.eval(x, n);
+
+			// calculate the tangent vectors
+			double* Gr = el.Gr(n);
+			double* Gs = el.Gs(n);
+			vec3d dxr(0, 0, 0), dxs(0, 0, 0);
+			for (int j = 0; j < neln; ++j)
+			{
+				dxr += x[j] * Gr[j];
+				dxs += x[j] * Gs[j];
+			}
+
+			// update volume
+			vol += w[n] * (r * (dxr ^ dxs));
+		}
+	}
+	return vol / 3.0;
 }

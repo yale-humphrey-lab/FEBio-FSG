@@ -145,6 +145,7 @@ SOFTWARE.*/
 #include "FERVEFatigueMaterial.h"
 #include "FEDamageCDF.h"
 #include "FEDamageCriterion.h"
+#include "FERelativeVolumeCriterion.h"
 #include "FEPlasticFlowCurve.h"
 #include "FEFiberExpLinear.h"
 #include "FEUncoupledFiberExpLinear.h"
@@ -267,9 +268,11 @@ SOFTWARE.*/
 #include "FEMaxStressCriterion.h"
 #include "FEMaxDamageCriterion.h"
 #include "FESpringRuptureCriterion.h"
+#include "FEContactGapCriterion.h"
 
 #include "FEInitialVelocity.h"
 #include "FENodalForce.h"
+#include "FENodalTargetForce.h"
 
 #include "FEPreStrainElastic.h"
 #include "FEPreStrainUncoupledElastic.h"
@@ -285,7 +288,6 @@ SOFTWARE.*/
 #include "FESolidModule.h"
 
 #include "FESolidAnalysis.h"
-#include <FECore/FEModelUpdate.h>
 
 #include "FEElasticBeamMaterial.h"
 
@@ -631,6 +633,7 @@ void FEBioMech::InitModule()
 	//-----------------------------------------------------------------------------
 	// classes derived from FENodalLoad
 	REGISTER_FECORE_CLASS(FENodalForce, "nodal_force");
+	REGISTER_FECORE_CLASS(FENodalTargetForce, "nodal_target_force");
 
 	//-----------------------------------------------------------------------------
 	// classes derived from FESurfaceLoad
@@ -1147,22 +1150,14 @@ void FEBioMech::InitModule()
 	// Derived from FEMeshAdaptorCriterion
 	REGISTER_FECORE_CLASS(FEStressCriterion, "stress");
 	REGISTER_FECORE_CLASS(FEDamageAdaptorCriterion, "damage");
+    REGISTER_FECORE_CLASS(FERelativeVolumeCriterion, "relative volume");
 	REGISTER_FECORE_CLASS(FESpringForceCriterion, "spring force");
 	REGISTER_FECORE_CLASS(FESpringStretchCriterion, "spring stretch");
+	REGISTER_FECORE_CLASS(FEContactGapCriterion, "contact gap");
 
 	//-----------------------------------------------------------------------------
 	// Derived from FEElemDataGenerator
 	REGISTER_FECORE_CLASS(FEDeformationMapGenerator, "defgrad");
-
-	//-----------------------------------------------------------------------------
-	// Model update requests
-	febio.OnCreateEvent(UpdateModelWhenCreating<FESolidAnalysis>([](FEModelUpdate& fem) {
-			fem.AddPlotVariable("displacement");
-			fem.AddPlotVariable("stress");
-		}));
-
-	febio.OnCreateEvent(AddPlotVariableWhenCreating<FEContactInterface>("contact pressure"));
-	febio.OnCreateEvent(AddPlotVariableWhenCreating<FEContactInterface>("contact gap"));
 
 	febio.SetActiveModule(0);
 }

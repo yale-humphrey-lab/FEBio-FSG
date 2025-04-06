@@ -63,6 +63,7 @@ Timer::Timer()
 
 Timer::~Timer()
 {
+	if (Imp::activeTimer == this) Imp::activeTimer = nullptr;
 	delete m;
 }
 
@@ -115,6 +116,7 @@ void Timer::reset()
 	m->isRunning = false;
 	m->isPaused = false;
 	m->parent = nullptr;
+	if (m->activeTimer == this) m->activeTimer = nullptr;
 }
 
 bool Timer::isRunning() const { return m->isRunning; }

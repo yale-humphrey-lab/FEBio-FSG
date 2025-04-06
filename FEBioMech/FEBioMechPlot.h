@@ -53,6 +53,15 @@ public:
 	bool Save(FEMesh& m, FEDataStream& a);
 };
 
+
+//! Nodal shell displacements
+class FEPlotNodeShellDisplacement : public FEPlotNodeData
+{
+public:
+    FEPlotNodeShellDisplacement(FEModel* pfem) : FEPlotNodeData(pfem, PLT_VEC3F, FMT_NODE) { SetUnits(UNIT_LENGTH); }
+    bool Save(FEMesh& m, FEDataStream& a);
+};
+
 //-----------------------------------------------------------------------------
 //! Nodal velocities
 //!
@@ -93,7 +102,10 @@ class FEPlotContactGap : public FEPlotSurfaceData
 {
 public:
 	FEPlotContactGap(FEModel* pfem) : FEPlotSurfaceData(pfem, PLT_FLOAT, FMT_ITEM) { SetUnits(UNIT_LENGTH); }
-    bool Save(FESurface& surf, FEDataStream& a);
+	bool SetFilter(const char* sz) override;
+	bool Save(FESurface& surf, FEDataStream& a);
+private:
+	std::string m_interfaceName;
 };
 
 //-----------------------------------------------------------------------------
@@ -112,8 +124,11 @@ public:
 class FEPlotContactPressure : public FEPlotSurfaceData
 {
 public:
-    FEPlotContactPressure(FEModel* pfem) : FEPlotSurfaceData(pfem, PLT_FLOAT, FMT_ITEM){ SetUnits(UNIT_PRESSURE); }
-    bool Save(FESurface& surf, FEDataStream& a);
+	FEPlotContactPressure(FEModel* pfem) : FEPlotSurfaceData(pfem, PLT_FLOAT, FMT_ITEM){ SetUnits(UNIT_PRESSURE); }
+	bool SetFilter(const char* sz) override;
+	bool Save(FESurface& surf, FEDataStream& a);
+private:
+	std::string m_interfaceName;
 };
 
 //-----------------------------------------------------------------------------
@@ -123,7 +138,10 @@ class FEPlotContactTraction : public FEPlotSurfaceData
 {
 public:
     FEPlotContactTraction(FEModel* pfem) : FEPlotSurfaceData(pfem, PLT_VEC3F, FMT_ITEM){ SetUnits(UNIT_PRESSURE); }
-    bool Save(FESurface& surf, FEDataStream& a);
+	bool SetFilter(const char* sz) override;
+	bool Save(FESurface& surf, FEDataStream& a);
+private:
+	std::string m_interfaceName;
 };
 
 //-----------------------------------------------------------------------------
@@ -607,6 +625,13 @@ public:
 	bool Save(FEDomain& dom, FEDataStream& a);
 };
 
+class FEPlotSPRRelativeVolume : public FEPlotDomainData
+{
+public:
+	FEPlotSPRRelativeVolume(FEModel* pfem) : FEPlotDomainData(pfem, PLT_FLOAT, FMT_NODE) {}
+	bool Save(FEDomain& dom, FEDataStream& a);
+};
+
 // NOTE: Deprecated, but maintained for backward compatibility
 class FEPlotShellRelativeVolume : public FEPlotDomainData
 {
@@ -926,6 +951,87 @@ class FEPlotNodalStresses : public FEPlotDomainData
 public:
 	FEPlotNodalStresses(FEModel* pfem) : FEPlotDomainData(pfem, PLT_MAT3FS, FMT_MULT){ SetUnits(UNIT_PRESSURE); }
 	bool Save(FEDomain& dom, FEDataStream& a);
+};
+
+//-----------------------------------------------------------------------------
+//! Class that projects stresses from integration points to the nodes
+class FEPlotShellTopStress : public FEPlotDomainData
+{
+public:
+    FEPlotShellTopStress(FEModel* pfem) : FEPlotDomainData(pfem, PLT_MAT3FS, FMT_ITEM){ SetUnits(UNIT_PRESSURE); }
+    bool Save(FEDomain& dom, FEDataStream& a);
+};
+
+//-----------------------------------------------------------------------------
+//! Class that projects stresses from integration points to the bottom shell nodes
+class FEPlotShellBottomStress : public FEPlotDomainData
+{
+public:
+    FEPlotShellBottomStress(FEModel* pfem) : FEPlotDomainData(pfem, PLT_MAT3FS, FMT_ITEM){ SetUnits(UNIT_PRESSURE); }
+    bool Save(FEDomain& dom, FEDataStream& a);
+};
+
+//-----------------------------------------------------------------------------
+//! Class that projects stresses from integration points to the nodes
+class FEPlotShellTopNodalStresses : public FEPlotDomainData
+{
+public:
+    FEPlotShellTopNodalStresses(FEModel* pfem) : FEPlotDomainData(pfem, PLT_MAT3FS, FMT_MULT){ SetUnits(UNIT_PRESSURE); }
+    bool Save(FEDomain& dom, FEDataStream& a);
+};
+
+//-----------------------------------------------------------------------------
+//! Class that projects stresses from integration points to the bottom shell nodes
+class FEPlotShellBottomNodalStresses : public FEPlotDomainData
+{
+public:
+    FEPlotShellBottomNodalStresses(FEModel* pfem) : FEPlotDomainData(pfem, PLT_MAT3FS, FMT_MULT){ SetUnits(UNIT_PRESSURE); }
+    bool Save(FEDomain& dom, FEDataStream& a);
+};
+
+//-----------------------------------------------------------------------------
+//! Class that projects Lagrange strains from integration points to the nodes
+class FEPlotNodalStrains : public FEPlotDomainData
+{
+public:
+    FEPlotNodalStrains(FEModel* pfem) : FEPlotDomainData(pfem, PLT_MAT3FS, FMT_MULT){ SetUnits(UNIT_NONE); }
+    bool Save(FEDomain& dom, FEDataStream& a);
+};
+
+//-----------------------------------------------------------------------------
+//! Class that projects stresses from integration points to the nodes
+class FEPlotShellTopStrain : public FEPlotDomainData
+{
+public:
+    FEPlotShellTopStrain(FEModel* pfem) : FEPlotDomainData(pfem, PLT_MAT3FS, FMT_ITEM){ SetUnits(UNIT_NONE); }
+    bool Save(FEDomain& dom, FEDataStream& a);
+};
+
+//-----------------------------------------------------------------------------
+//! Class that projects stresses from integration points to the bottom shell nodes
+class FEPlotShellBottomStrain : public FEPlotDomainData
+{
+public:
+    FEPlotShellBottomStrain(FEModel* pfem) : FEPlotDomainData(pfem, PLT_MAT3FS, FMT_ITEM){ SetUnits(UNIT_NONE); }
+    bool Save(FEDomain& dom, FEDataStream& a);
+};
+
+//-----------------------------------------------------------------------------
+//! Class that projects Lagrange strains from integration points to the shell nodes
+class FEPlotShellTopNodalStrains : public FEPlotDomainData
+{
+public:
+    FEPlotShellTopNodalStrains(FEModel* pfem) : FEPlotDomainData(pfem, PLT_MAT3FS, FMT_MULT){ SetUnits(UNIT_NONE); }
+    bool Save(FEDomain& dom, FEDataStream& a);
+};
+
+//-----------------------------------------------------------------------------
+//! Class that projects Lagrange strains from integration points to the shell nodes
+class FEPlotShellBottomNodalStrains : public FEPlotDomainData
+{
+public:
+    FEPlotShellBottomNodalStrains(FEModel* pfem) : FEPlotDomainData(pfem, PLT_MAT3FS, FMT_MULT){ SetUnits(UNIT_NONE); }
+    bool Save(FEDomain& dom, FEDataStream& a);
 };
 
 //-----------------------------------------------------------------------------
@@ -1459,4 +1565,15 @@ class FEPlotBodyForce : public FEPlotDomainData
 public:
 	FEPlotBodyForce(FEModel* pfem) : FEPlotDomainData(pfem, PLT_VEC3F, FMT_ITEM) { SetUnits(UNIT_SPECIFIC_FORCE); }
 	bool Save(FEDomain& dom, FEDataStream& a);
+};
+
+//=============================================================================
+//                            E D G E   D A T A
+//=============================================================================
+
+class FEPlotEdgeContactGap : public FEPlotEdgeData
+{
+public:
+	FEPlotEdgeContactGap(FEModel* fem) : FEPlotEdgeData(fem, PLT_FLOAT, FMT_NODE) { SetUnits(UNIT_LENGTH); }
+	bool Save(FEEdge& edge, FEDataStream& a);
 };

@@ -36,7 +36,7 @@ FEElasticMaterialPoint::FEElasticMaterialPoint(FEMaterialPointData* mp) : FEMate
 	m_J = 1;
 	m_J_star = 1;
 	m_s.zero();
-    m_v = m_a = m_gradJ = vec3d(0, 0, 0);
+    m_v = m_a = vec3d(0, 0, 0);
     m_buncoupled = false;
     m_Wt = m_Wp = 0;
     m_p = 0;
@@ -61,7 +61,7 @@ void FEElasticMaterialPoint::Init()
 
 	m_s.zero();
 
-    m_v = m_a = m_gradJ = vec3d(0, 0, 0);
+    m_v = m_a = vec3d(0, 0, 0);
     m_L.zero();
     
     m_Wt = m_Wp = 0;

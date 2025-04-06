@@ -41,6 +41,7 @@ SOFTWARE.*/
 #include <string.h>
 #include <stdarg.h>
 #include <sstream>
+#include <iostream>
 #include "FEBioImport.h"
 
 #ifndef WIN32
@@ -578,6 +579,7 @@ std::vector<std::string> split_string(const std::string& s, char delim)
 bool FEFileSection::ReadParameter(XMLTag& tag, FEParameterList& pl, const char* szparam, FECoreBase* pc, bool parseAttributes)
 {
 	FEParam* pp = nullptr;
+	const char* szparamName = (szparam == 0 ? tag.Name() : szparam);
 	if (tag == "add_param")
 	{
 		// get the name and value
@@ -595,9 +597,14 @@ bool FEFileSection::ReadParameter(XMLTag& tag, FEParameterList& pl, const char* 
 	else
 	{
 		// see if we can find this parameter
-		pp = pl.FindFromName((szparam == 0 ? tag.Name() : szparam));
+		pp = pl.FindFromName(szparamName);
 	}
 	if (pp == 0) return false;
+
+	if (pp->IsObsolete())
+	{
+		feLogWarning("parameter '%s' is obsolete.", szparamName);
+	}
 
 	if (pp->dim() == 1)
 	{
@@ -1199,8 +1206,12 @@ bool FEFileSection::ReadParameter(XMLTag& tag, FECoreBase* pc, const char* szpar
 					if (edgeList == nullptr) throw XMLReader::InvalidValue(tag);
 
 					FEEdge* edge = dynamic_cast<FEEdge*>(prop->get(0));
-					GetBuilder()->BuildEdge(*edge, *edgeList);
-//					mesh.AddEdge(edge); // I think that makes the mesh the owner, which is not the case!
+					if (edge == nullptr) throw XMLReader::InvalidValue(tag);
+
+					if (GetBuilder()->BuildEdge(*edge, *edgeList))
+						mesh.AddEdge(edge);
+					else
+						throw XMLReader::InvalidValue(tag);
 				}
 				else throw XMLReader::InvalidTag(tag);
 			}
@@ -1478,6 +1489,14 @@ bool FEFileImport::ParseFile(XMLTag& tag)
 FEModel* FEFileImport::GetFEModel()
 {
 	return &m_builder->GetFEModel();
+}
+
+//-----------------------------------------------------------------------------
+//! set a custom model builder 
+void FEFileImport::SetModelBuilder(FEModelBuilder* modelBuilder)
+{
+	delete m_builder;
+	m_builder = modelBuilder;
 }
 
 //-----------------------------------------------------------------------------

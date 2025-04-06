@@ -397,7 +397,7 @@ void FEModel::AddInitialCondition(FEInitialCondition* pbc) { m_imp->m_IC.push_ba
 
 //-----------------------------------------------------------------------------
 //! retrieve the number of steps
-int FEModel::Steps() { return (int)m_imp->m_Step.size(); }
+int FEModel::Steps() const { return (int)m_imp->m_Step.size(); }
 
 //-----------------------------------------------------------------------------
 //! clear the steps
@@ -486,6 +486,7 @@ bool FEModel::Init()
 	// intitialize time
 	FETimeInfo& tp = GetTime();
 	tp.currentTime = 0;
+	tp.timeIncrement = m_imp->m_pStep->m_dt0;
 	m_imp->m_ftime0 = 0;
 
 	// initialize global data
@@ -1226,14 +1227,14 @@ bool FEModel::Solve()
 			// solve the analaysis step
 			bok = m_imp->m_pStep->Solve();
 
+			// do callbacks
+			DoCallback(CB_STEP_SOLVED);
+
 			if (nstep + 1 == Steps())
 			{
 				// set the solved flag
 				m_imp->m_bsolved = bok;
 			}
-
-			// do callbacks
-			DoCallback(CB_STEP_SOLVED);
 
 			// wrap it up
 			m_imp->m_pStep->Deactivate();

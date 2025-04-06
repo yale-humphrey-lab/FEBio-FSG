@@ -875,6 +875,8 @@ BEGIN_FECORE_CLASS(FEStandardElasticSolidDomain, FEElasticSolidDomain)
 	ADD_PARAMETER(m_augtol , "atol");
 	ADD_PARAMETER(m_naugmin, "minaug");
 	ADD_PARAMETER(m_naugmax, "maxaug");
+	ADD_PARAMETER(m_secant_stress, "secant_stress");
+	ADD_PARAMETER(m_secant_tangent, "secant_tangent");
 END_FECORE_CLASS();
 
 FEStandardElasticSolidDomain::FEStandardElasticSolidDomain(FEModel* fem) : FEElasticSolidDomain(fem)

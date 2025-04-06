@@ -64,6 +64,7 @@ SOFTWARE.*/
 #include "FESlidingInterface.h"
 #include "FESlidingElasticInterface.h"
 #include "FETiedContactSurface.h"
+#include "FEStickyInterface.h"
 #include "FEReactiveVEMaterialPoint.h"
 #include "FELinearTrussDomain.h"
 #include <FECore/FESurface.h>
@@ -72,6 +73,7 @@ SOFTWARE.*/
 #include <FECore/FEElement.h>
 #include <FEBioMech/FEElasticBeamDomain.h>
 #include <FEBioMech/FEElasticBeamMaterial.h>
+#include <FEBioMech/FEEdgeToSurfaceSlidingContact.h>
 #include "FEIdealGasPressure.h"
 #include "FEBodyForce.h"
 
@@ -104,6 +106,19 @@ bool FEPlotNodeRotation::Save(FEMesh& m, FEDataStream& a)
 		return node.get_vec3d(dof_U, dof_V, dof_W);
 		});
 	return true;
+}
+
+bool FEPlotNodeShellDisplacement::Save(FEMesh& m, FEDataStream& a)
+{
+    FEModel* fem = GetFEModel();
+    const int dof_SX = fem->GetDOFIndex("sx");
+    const int dof_SY = fem->GetDOFIndex("sy");
+    const int dof_SZ = fem->GetDOFIndex("sz");
+    
+    writeNodalValues<vec3d>(m, a, [=](const FENode& node) {
+        return node.get_vec3d(dof_SX, dof_SY, dof_SZ);
+    });
+    return true;
 }
 
 //-----------------------------------------------------------------------------
@@ -154,7 +169,12 @@ bool FEPlotNodeReactionForces::Save(FEMesh& m, FEDataStream& a)
 //                       S U R F A C E    D A T A
 //=============================================================================
 
-//-----------------------------------------------------------------------------
+bool FEPlotContactGap::SetFilter(const char* szfilter)
+{
+	if (szfilter) m_interfaceName = szfilter;
+	return (szfilter != nullptr);
+}
+
 // Plot contact gap
 bool FEPlotContactGap::Save(FESurface& surf, FEDataStream& a)
 {
@@ -164,19 +184,26 @@ bool FEPlotContactGap::Save(FESurface& surf, FEDataStream& a)
 	// make sure the corresponding contact interface is active
 	// (in case the parent was not set, we'll proceed regardless)
 	FEContactInterface* pci = pcs->GetContactInterface();
-	if ((pci == 0) || pci->IsActive())
+	bool write = false;
+	if (pci == nullptr) write = true;
+	else if (pci->IsActive())
+	{
+		if (m_interfaceName.empty() || (m_interfaceName == pci->GetName())) write = true;
+	}
+
+	if (write)
 	{
 		// NOTE: the sliding surface does not use material points, so we need this little hack. 
-		FESlidingSurface* ss = dynamic_cast<FESlidingSurface*>(pcs);
-		if (ss)
+		FESlidingSurface* slidingSurface = dynamic_cast<FESlidingSurface*>(pcs);
+		if (slidingSurface)
 		{
-			for (int i = 0; i < ss->Elements(); ++i)
+			for (int i = 0; i < slidingSurface->Elements(); ++i)
 			{
-				FEElement& el = ss->Element(i);
+				FEElement& el = slidingSurface->Element(i);
 				double g = 0.0;
 				for (int j = 0; j < el.Nodes(); ++j)
 				{
-					double gj = ss->m_data[el.m_lnode[j]].m_gap;
+					double gj = slidingSurface->m_data[el.m_lnode[j]].m_gap;
 					g += gj;
 				}
 				g /= el.Nodes();
@@ -185,16 +212,34 @@ bool FEPlotContactGap::Save(FESurface& surf, FEDataStream& a)
 			return true;
 		}
 
-		FETiedContactSurface* ts = dynamic_cast<FETiedContactSurface*>(pcs);
-		if (ts)
+		FETiedContactSurface* tiedSurface = dynamic_cast<FETiedContactSurface*>(pcs);
+		if (tiedSurface)
 		{
-			for (int i = 0; i < ts->Elements(); ++i)
+			for (int i = 0; i < tiedSurface->Elements(); ++i)
 			{
-				FEElement& el = ts->Element(i);
+				FEElement& el = tiedSurface->Element(i);
 				double g = 0.0;
 				for (int j = 0; j < el.Nodes(); ++j)
 				{
-					double gj = ts->m_data[el.m_lnode[j]].m_gap;
+					double gj = tiedSurface->m_data[el.m_lnode[j]].m_gap;
+					g += gj;
+				}
+				g /= el.Nodes();
+				a << g;
+			}
+			return true;
+		}
+
+		FEStickySurface* stickySurface = dynamic_cast<FEStickySurface*>(pcs);
+		if (stickySurface)
+		{
+			for (int i = 0; i < stickySurface->Elements(); ++i)
+			{
+				FEElement& el = stickySurface->Element(i);
+				double g = 0.0;
+				for (int j = 0; j < el.Nodes(); ++j)
+				{
+					double gj = stickySurface->m_data[el.m_lnode[j]].scalar_gap;
 					g += gj;
 				}
 				g /= el.Nodes();
@@ -235,7 +280,12 @@ bool FEPlotVectorGap::Save(FESurface& surf, FEDataStream& a)
 	return false;
 }
 
-//-----------------------------------------------------------------------------
+bool FEPlotContactPressure::SetFilter(const char* szfilter)
+{
+	if (szfilter) m_interfaceName = szfilter;
+	return (szfilter != nullptr);
+}
+
 // Plot contact pressure
 bool FEPlotContactPressure::Save(FESurface &surf, FEDataStream& a)
 {
@@ -245,19 +295,26 @@ bool FEPlotContactPressure::Save(FESurface &surf, FEDataStream& a)
 	// make sure the corresponding contact interface is active
 	// (in case the parent was not set, we'll proceed regardless)
 	FEContactInterface* pci = pcs->GetContactInterface();
-	if ((pci == 0) || pci->IsActive())
+	bool write = false;
+	if (pci == nullptr) write = true;
+	else if (pci->IsActive())
+	{
+		if (m_interfaceName.empty() || (m_interfaceName == pci->GetName())) write = true;
+	}
+
+	if (write)
 	{
 		// NOTE: the sliding surface does not use material points, so we need this little hack. 
-		FESlidingSurface* ss = dynamic_cast<FESlidingSurface*>(pcs);
-		if (ss)
+		FESlidingSurface* slidingSurface = dynamic_cast<FESlidingSurface*>(pcs);
+		if (slidingSurface)
 		{
-			for (int i = 0; i < ss->Elements(); ++i)
+			for (int i = 0; i < slidingSurface->Elements(); ++i)
 			{
-				FEElement& el = ss->Element(i);
+				FEElement& el = slidingSurface->Element(i);
 				double Lm = 0.0;
 				for (int j = 0; j < el.Nodes(); ++j)
 				{
-					double Lmj = ss->m_data[el.m_lnode[j]].m_Ln;
+					double Lmj = slidingSurface->m_data[el.m_lnode[j]].m_Ln;
 					Lm += Lmj;
 				}
 				Lm /= el.Nodes();
@@ -275,7 +332,12 @@ bool FEPlotContactPressure::Save(FESurface &surf, FEDataStream& a)
 	return false;
 }
 
-//-----------------------------------------------------------------------------
+bool FEPlotContactTraction::SetFilter(const char* szfilter)
+{
+	if (szfilter) m_interfaceName = szfilter;
+	return (szfilter != nullptr);
+}
+
 // Plot contact traction
 bool FEPlotContactTraction::Save(FESurface &surf, FEDataStream& a)
 {
@@ -284,8 +346,15 @@ bool FEPlotContactTraction::Save(FESurface &surf, FEDataStream& a)
 
 	// make sure the corresponding contact interface is active
 	// (in case the parent was not set, we'll proceed regardless)
-	FEContactInterface* pci = pcs->GetContactInterface(); assert(pci);
-	if ((pci == 0) || pci->IsActive())
+	FEContactInterface* pci = pcs->GetContactInterface();
+	bool write = false;
+	if (pci == nullptr) write = true;
+	else if (pci->IsActive())
+	{
+		if (m_interfaceName.empty() || (m_interfaceName == pci->GetName())) write = true;
+	}
+
+	if (write)
 	{
 		writeElementValue<vec3d>(surf, a, [=](int nface) {
 			vec3d tn;
@@ -795,6 +864,19 @@ public:
 	}
 };
 
+class FEStrain
+{
+public:
+    mat3ds operator()(const FEMaterialPoint& mp)
+    {
+        FEElement* el = mp.m_elem;
+        FEShellElementNew* se = dynamic_cast<FEShellElementNew*>(el);
+        const FEElasticMaterialPoint* pt = mp.ExtractData<FEElasticMaterialPoint>();
+        if (se) return (se->m_E[mp.m_index].norm() > 0) ? se->m_E[mp.m_index] : pt->Strain();
+        else return (pt ? pt->Strain() : mat3ds(0));
+    }
+};
+
 //-----------------------------------------------------------------------------
 //! Store the average stresses for each element. 
 bool FEPlotElementStress::Save(FEDomain& dom, FEDataStream& a)
@@ -881,8 +963,81 @@ bool FEPlotSPRLinearStresses::Save(FEDomain& dom, FEDataStream& a)
 //-----------------------------------------------------------------------------
 bool FEPlotNodalStresses::Save(FEDomain& dom, FEDataStream& a)
 {
+    if (dynamic_cast<FESSIShellDomain*>(&dom)) return false;  // new shell elements should be excluded
 	writeNodalProjectedElementValues<mat3ds>(dom, a, FEStress());
 	return true;
+}
+
+//-----------------------------------------------------------------------------
+bool FEPlotShellTopStress::Save(FEDomain& dom, FEDataStream& a)
+{
+    if (!dynamic_cast<FESSIShellDomain*>(&dom)) return false;  // only use with new shell elements
+    writeShellElementValues<mat3ds>(dom, a, FEStress(), false);
+    return true;
+}
+
+//-----------------------------------------------------------------------------
+bool FEPlotShellBottomStress::Save(FEDomain& dom, FEDataStream& a)
+{
+    if (!dynamic_cast<FESSIShellDomain*>(&dom)) return false;  // only use with new shell elements
+    writeShellElementValues<mat3ds>(dom, a, FEStress(), true);
+    return true;
+}
+
+//-----------------------------------------------------------------------------
+bool FEPlotShellTopNodalStresses::Save(FEDomain& dom, FEDataStream& a)
+{
+    if (!dynamic_cast<FESSIShellDomain*>(&dom)) return false;  // only use with new shell elements
+    writeShellNodalProjectedElementValues<mat3ds>(dom, a, FEStress(), false);
+    return true;
+}
+
+//-----------------------------------------------------------------------------
+bool FEPlotShellBottomNodalStresses::Save(FEDomain& dom, FEDataStream& a)
+{
+    if (!dynamic_cast<FESSIShellDomain*>(&dom)) return false;  // only use with new shell elements
+    writeShellNodalProjectedElementValues<mat3ds>(dom, a, FEStress(), true);
+    return true;
+}
+
+//-----------------------------------------------------------------------------
+bool FEPlotNodalStrains::Save(FEDomain& dom, FEDataStream& a)
+{
+    if (dynamic_cast<FESSIShellDomain*>(&dom)) return false;  // new shell elements should be excluded
+    writeNodalProjectedElementValues<mat3ds>(dom, a, FEStrain());
+    return true;
+}
+
+//-----------------------------------------------------------------------------
+bool FEPlotShellTopStrain::Save(FEDomain& dom, FEDataStream& a)
+{
+    if (!dynamic_cast<FESSIShellDomain*>(&dom)) return false;  // only use with new shell elements
+    writeShellElementValues<mat3ds>(dom, a, FEStrain(), false);
+    return true;
+}
+
+//-----------------------------------------------------------------------------
+bool FEPlotShellBottomStrain::Save(FEDomain& dom, FEDataStream& a)
+{
+    if (!dynamic_cast<FESSIShellDomain*>(&dom)) return false;  // only use with new shell elements
+    writeShellElementValues<mat3ds>(dom, a, FEStrain(), true);
+    return true;
+}
+
+//-----------------------------------------------------------------------------
+bool FEPlotShellTopNodalStrains::Save(FEDomain& dom, FEDataStream& a)
+{
+    if (!dynamic_cast<FESSIShellDomain*>(&dom)) return false;  // only use with new shell elements
+    writeShellNodalProjectedElementValues<mat3ds>(dom, a, FEStrain(), false);
+    return true;
+}
+
+//-----------------------------------------------------------------------------
+bool FEPlotShellBottomNodalStrains::Save(FEDomain& dom, FEDataStream& a)
+{
+    if (!dynamic_cast<FESSIShellDomain*>(&dom)) return false;  // only use with new shell elements
+    writeShellNodalProjectedElementValues<mat3ds>(dom, a, FEStrain(), true);
+    return true;
 }
 
 //=============================================================================
@@ -2067,7 +2222,20 @@ bool FEPlotRelativeVolume::Save(FEDomain &dom, FEDataStream& a)
 	return true;
 }
 
-//-----------------------------------------------------------------------------
+bool FEPlotSPRRelativeVolume::Save(FEDomain& dom, FEDataStream& a)
+{
+	if (dom.Class() == FE_DOMAIN_SOLID)
+	{
+		FESolidDomain& solidDomain = dynamic_cast<FESolidDomain&>(dom);
+		writeSPRElementValue(solidDomain, a, [](const FEMaterialPoint& mp) {
+				const FEElasticMaterialPoint* pt = mp.ExtractData<FEElasticMaterialPoint>();
+				return (pt ? pt->m_J : 0.0);
+			});
+		return true;
+	}
+	return false;
+}
+
 bool FEPlotShellRelativeVolume::Save(FEDomain& dom, FEDataStream& a)
 {
 	FEShellDomain* sd = dynamic_cast<FEShellDomain*>(&dom);
@@ -4733,4 +4901,18 @@ bool FEPlotBodyForce::Save(FEDomain& dom, FEDataStream& a)
 		return true;
 	}
 	return false;
+}
+
+bool FEPlotEdgeContactGap::Save(FEEdge& edge, FEDataStream& a)
+{
+	FEEdgeToSurfaceSlidingContactEdge* pe = dynamic_cast<FEEdgeToSurfaceSlidingContactEdge*>(&edge);
+	if (pe == nullptr) return false;
+
+	for (int i = 0; i < pe->Nodes(); ++i)
+	{
+		FEE2SSlidingContactPoint& pt = pe->m_points[i];
+		a << pt.m_gap;
+	}
+
+	return true;
 }

@@ -188,13 +188,13 @@ status open
 
 
 \series default
-Theory Manual Version 4.7 
+Theory Manual Version 4.9 
 \end_layout
 
 \begin_layout Date
 Last Updated:
- June 5,
- 2024
+ March 24,
+ 2025
 \end_layout
 
 \begin_layout Paragraph*
@@ -505,6 +505,7 @@ Development of the FEBio project is supported in part by a grant from the U.S.
 \begin_inset Graphics
 	filename Figures/NIHlogo.png
 	lyxscale 25
+	width 2cm
 	special height=0.75in
 
 \end_inset
@@ -2880,24 +2881,7 @@ where
 \begin_inset Formula $\gamma=\frac{\pi}{2}-\theta$
 \end_inset
 
- is its complementary angle (
-\begin_inset ERT
-status open
-
-\begin_layout Plain Layout
-
-
-\backslash
-figurename
-\end_layout
-
-\end_inset
-
-
-\begin_inset space ~
-\end_inset
-
-
+ is its complementary angle (Figure 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "fig17"
@@ -5617,7 +5601,7 @@ where
 \end_inset
 
 When eigenvalues coincide,
- L'Hospital's rule may be used to evalue the coefficient in the last term,
+ L'Hospital's rule may be used to evaluate the coefficient in the last term,
  
 \begin_inset Formula 
 \begin{equation}
@@ -6007,7 +5991,7 @@ nolink "false"
 
  can vary arbitrarily when enforcing the entropy inequality.
  Instead,
- we introduce the incompressbility constraint of eq.
+ we introduce the incompressibility constraint of eq.
 \begin_inset CommandInset ref
 LatexCommand eqref
 reference "eq:incompressibility-redux"
@@ -8852,7 +8836,7 @@ apparent mass density
  Following 
 \begin_inset CommandInset citation
 LatexCommand citep
-key "Bowen69,Ateshian07"
+key "Bowen69,Ateshian07b"
 literal "false"
 
 \end_inset
@@ -12764,6 +12748,306 @@ nolink "false"
 \end_layout
 
 \begin_layout Subsection
+Wall Shear Stress
+\begin_inset CommandInset label
+LatexCommand label
+name "subsec:Wall-Shear-Stress"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Consider a no-slip impermeable wall (a wall on which the fluid velocity is equal to the wall velocity,
+ 
+\begin_inset Formula $\mathbf{v}=\mathbf{v}_{\Gamma}$
+\end_inset
+
+).
+ Let 
+\begin_inset Formula $\left\{ \mathbf{n},\mathbf{s},\mathbf{t}\right\} $
+\end_inset
+
+ be an orthonormal basis where 
+\begin_inset Formula $\mathbf{n}$
+\end_inset
+
+ is the outward normal to the fluid on the wall,
+ 
+\begin_inset Formula $\mathbf{s}$
+\end_inset
+
+ is a unit tangent to the wall along the local direction of the flow (in the immediate wall vicinity),
+ and 
+\begin_inset Formula $\mathbf{t}$
+\end_inset
+
+ is a unit tangent to the wall in the direction orthogonal to 
+\begin_inset Formula $\mathbf{n}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathbf{s}$
+\end_inset
+
+.
+ The components of the velocity gradient 
+\begin_inset Formula $\mathbf{L}=\grad\mathbf{v}$
+\end_inset
+
+ on the wall,
+ when expressed in matrix form in the basis 
+\begin_inset Formula $\left\{ \mathbf{n},\mathbf{s},\mathbf{t}\right\} $
+\end_inset
+
+,
+ are zero in the directions of the wall tangent (since there is no variation in any of the velocity components along those directions).
+ Moreover,
+ by construction,
+ the tangential velocity component 
+\begin_inset Formula $v_{t}$
+\end_inset
+
+ along 
+\begin_inset Formula $\mathbf{t}$
+\end_inset
+
+ is zero,
+ not only on the wall but also in its vicinity (thus,
+ 
+\begin_inset Formula $\partial v_{t}/\partial x_{n}=0$
+\end_inset
+
+).
+ Combining these factors produces
+\begin_inset Formula 
+\begin{equation}
+\left[\mathbf{L}\right]=\left[\begin{array}{ccc}
+\frac{\partial v_{n}}{\partial x_{n}} & \frac{\partial v_{n}}{\partial x_{s}} & \frac{\partial v_{n}}{\partial x_{t}}\\
+\frac{\partial v_{s}}{\partial x_{n}} & \frac{\partial v_{s}}{\partial x_{s}} & \frac{\partial v_{s}}{\partial x_{t}}\\
+\frac{\partial v_{t}}{\partial x_{n}} & \frac{\partial v_{t}}{\partial x_{s}} & \frac{\partial v_{t}}{\partial x_{t}}
+\end{array}\right]=\left[\begin{array}{ccc}
+\frac{\partial v_{n}}{\partial x_{n}} & 0 & 0\\
+\frac{\partial v_{s}}{\partial x_{n}} & 0 & 0\\
+0 & 0 & 0
+\end{array}\right]\label{eq:wss-L}
+\end{equation}
+
+\end_inset
+
+where 
+\begin_inset Formula $dx_{n}$
+\end_inset
+
+,
+ 
+\begin_inset Formula $dx_{s}$
+\end_inset
+
+ and 
+\begin_inset Formula $dx_{t}$
+\end_inset
+
+ represent line elements along each of the coordinate directions.
+ The resulting rate of deformation tensor is
+\begin_inset Formula 
+\begin{equation}
+\left[\mathbf{D}\right]=\frac{1}{2}\left(\left[\mathbf{L}\right]+\left[\mathbf{L}\right]^{T}\right)=\left[\begin{array}{ccc}
+\frac{\partial v_{n}}{\partial x_{n}} & \frac{1}{2}\frac{\partial v_{s}}{\partial x_{n}} & 0\\
+\frac{1}{2}\frac{\partial v_{s}}{\partial x_{n}} & 0 & 0\\
+0 & 0 & 0
+\end{array}\right]\label{eq:wss=D}
+\end{equation}
+
+\end_inset
+
+Therefore the fluid stress evaluated from Eq.
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:stress"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+ will typically have the form
+\begin_inset Formula 
+\begin{equation}
+\left[\boldsymbol{\sigma}\right]=-p\left[\mathbf{I}\right]+\left(\kappa-\frac{2}{3}\mu\right)\left(\tr\mathbf{D}\right)\left[\mathbf{I}\right]+2\mu\left[\mathbf{D}\right]=\left[\begin{array}{ccc}
+-p+\left(\kappa+\frac{4}{3}\eta\right)\frac{\partial v_{n}}{\partial x_{n}} & \mu\frac{\partial v_{s}}{\partial x_{n}} & 0\\
+\mu\frac{\partial v_{s}}{\partial x_{n}} & -p & 0\\
+0 & 0 & -p
+\end{array}\right]\label{eq:wss-stress}
+\end{equation}
+
+\end_inset
+
+where 
+\begin_inset Formula $\kappa$
+\end_inset
+
+ is the bulk viscosity and 
+\begin_inset Formula $\mu$
+\end_inset
+
+ is the shear viscosity (which may be a function of the rate of deformation in the case of a non-Newtonian fluid),
+ see Eq.
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:viscous-stress"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+ in Section
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Viscous-Fluids"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+.
+ From this result we conclude that the wall shear stress is
+\begin_inset Formula 
+\begin{equation}
+\sigma_{ns}=\sigma_{sn}=\mu\frac{\partial v_{s}}{\partial x_{n}}\label{eq:wss-shear-stress}
+\end{equation}
+
+\end_inset
+
+In practice it is inconvenient to evaluate this wall shear stress in a local coordinate system attached to the wall and directed along the flow in the wall vicinity.
+ As it turns out,
+ the principal normal stresses evaluated from 
+\begin_inset Formula $\left[\boldsymbol{\sigma}\right]$
+\end_inset
+
+ in Eq.
+ 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:wss-stress"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+ are
+\begin_inset Formula 
+\begin{equation}
+\begin{aligned}\sigma_{1} & =-p & \sigma_{2} & =-p+\frac{1}{2}\left(\sigma_{nn}-\sqrt{\sigma_{nn}^{2}+4\sigma_{sn}^{2}}\right) & \sigma_{3} & =-p+\frac{1}{2}\left(\sigma_{nn}+\sqrt{\sigma_{nn}^{2}+4\sigma_{sn}^{2}}\right)\end{aligned}
+\label{eq:wss-principal-normal}
+\end{equation}
+
+\end_inset
+
+where
+\begin_inset Formula 
+\begin{equation}
+\begin{aligned}\sigma_{nn} & =-p+\left(\kappa+\frac{4}{3}\mu\right)\frac{\partial v_{n}}{\partial x_{n}} & \sigma_{sn} & =\mu\frac{\partial v_{s}}{\partial x_{n}}\end{aligned}
+\label{eq:wss-normal-shear-tractions}
+\end{equation}
+
+\end_inset
+
+Thus,
+ the maximum shear stress is
+\begin_inset Formula 
+\begin{equation}
+\begin{aligned}\sigma_{s,\text{max}} & =\max\left(\frac{\left|\sigma_{1}-\sigma_{2}\right|}{2},\frac{\left|\sigma_{2}-\sigma_{3}\right|}{2},\frac{\left|\sigma_{3}-\sigma_{1}\right|}{2}\right)\\
+ & =\max\left(\frac{1}{4}\left|\sigma_{nn}-\sqrt{\sigma_{nn}^{2}+4\sigma_{sn}^{2}}\right|,\frac{1}{2}\left|\sqrt{\sigma_{nn}^{2}+4\sigma_{sn}^{2}}\right|,\frac{1}{4}\left|\sigma_{nn}+\sqrt{\sigma_{nn}^{2}+4\sigma_{sn}^{2}}\right|\right)
+\end{aligned}
+\label{eq:wss-max-shear-stress-general}
+\end{equation}
+
+\end_inset
+
+When the flow is incompressible it follows that 
+\begin_inset Formula $\tr\mathbf{D}=\frac{\partial v_{n}}{\partial x_{n}}=0$
+\end_inset
+
+,
+ in which case 
+\begin_inset Formula $\boldsymbol{\sigma}_{nn}=-p$
+\end_inset
+
+ according to Eq.
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:wss-normal-shear-tractions"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+.
+ Thus,
+\begin_inset Formula 
+\begin{equation}
+\sigma_{s,\text{max}}=\max\left(\frac{\left|\sigma_{ns}\right|}{2},\left|\sigma_{ns}\right|,\frac{\left|\sigma_{ns}\right|}{2}\right)=\left|\sigma_{sn}\right|\label{eq:wss-max-shear-incompressible}
+\end{equation}
+
+\end_inset
+
+Therefore,
+ when the flow is incompressible the wall shear stress is equal to the maximum fluid shear stress.
+ This result makes it convenient to use the maximum fluid shear stress on the wall as the value of the wall shear stress.
+ Conversely,
+ if the flow is compressible (which is generally the case in FEBio) but as long as
+\begin_inset Formula 
+\begin{equation}
+\left|\sigma_{nn}\right|\ll2\left|\sigma_{sn}\right|\label{eq:wss-negligible-normal}
+\end{equation}
+
+\end_inset
+
+the conclusion remains the same.
+ Therefore,
+ in most applications one can use the maximum fluid shear stress as a method for estimating the wall shear stress.
+ This result remains valid for problems where the wall is not stationary,
+ such as fluid-structure interaction problems.
+ In practice one can always examine the principal normal stresses in the fluid,
+ along the wall,
+ from which one can deduce if Eq.
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:wss-negligible-normal"
+plural "false"
+caps "false"
+noprefix "false"
+nolink "false"
+
+\end_inset
+
+ is satisfied satisfactorily.
+\end_layout
+
+\begin_layout Standard
+However,
+ if the wall is porous or if slippage is allowed,
+ then the wall velocity components are not necessarily zero or negligible.
+ Thus,
+ the maximum shear stress is not always equal to the wall shear stress.
+\end_layout
+
+\begin_layout Subsection
 Energy Balance
 \begin_inset CommandInset label
 LatexCommand label
@@ -13418,7 +13702,7 @@ nolink "false"
  The complete theoretical framework for such materials can be found in 
 \begin_inset CommandInset citation
 LatexCommand citep
-key "Shim21a"
+key "Shim22"
 literal "false"
 
 \end_inset
@@ -13733,7 +14017,7 @@ where
  as shown in our earlier formulation of computational fluid dynamics 
 \begin_inset CommandInset citation
 LatexCommand citep
-key "Ateshian2018"
+key "Ateshian18"
 literal "false"
 
 \end_inset
@@ -13900,7 +14184,7 @@ nolink "false"
 ) 
 \begin_inset CommandInset citation
 LatexCommand citep
-key "Ateshian2011,Ateshian2013,Shim2019"
+key "Ateshian12,Ateshian13,Shim19"
 literal "true"
 
 \end_inset
@@ -13974,7 +14258,7 @@ In this expression,
 Based on the constitutive assumptions of our hybrid biphasic formulation 
 \begin_inset CommandInset citation
 LatexCommand citep
-key "Shim21a"
+key "Shim22"
 literal "false"
 
 \end_inset
@@ -14196,7 +14480,7 @@ Jump conditions on the axioms of mass,
  The full set of jump conditions for a hybrid biphasic material were derived in our recent study for the constitutive assumptions adopted in this formulation 
 \begin_inset CommandInset citation
 LatexCommand citep
-key "Shim21a"
+key "Shim22"
 literal "false"
 
 \end_inset
@@ -14369,7 +14653,7 @@ nolink "false"
  
 \begin_inset CommandInset citation
 LatexCommand citep
-key "Hou1989"
+key "Hou89"
 literal "false"
 
 \end_inset
@@ -14746,7 +15030,7 @@ We model the domain
  Unlike the standard (Darcy flow through a porous-deformable) multiphasic domain 
 \begin_inset CommandInset citation
 LatexCommand citep
-key "Ateshian2007,Ateshian13,Ateshian14"
+key "Ateshian07b,Ateshian13,Ateshian14"
 literal "false"
 
 \end_inset
@@ -14987,8 +15271,8 @@ where
 
  relative to an ideal solution 
 \begin_inset CommandInset citation
-LatexCommand cite
-key "Ogston1961,Laurent1964"
+LatexCommand citep
+key "Ogston61,Laurent63"
 literal "false"
 
 \end_inset
@@ -15583,7 +15867,7 @@ nolink "false"
  
 \begin_inset CommandInset citation
 LatexCommand citep
-key "Ateshian2014"
+key "Ateshian14"
 literal "false"
 
 \end_inset
@@ -15704,7 +15988,7 @@ nolink "false"
 
 \begin_inset CommandInset ref
 LatexCommand ref
-reference "subsec:Salt-Dissociation-CFDSol"
+reference "sec:Chemical-Reactions"
 plural "false"
 caps "false"
 noprefix "false"
@@ -15720,7 +16004,7 @@ nolink "false"
  can be determined as described in the previous standard multiphasic solver 
 \begin_inset CommandInset citation
 LatexCommand citep
-key "Ateshian2013,Ateshian2014"
+key "Ateshian13,Ateshian14"
 literal "false"
 
 \end_inset
@@ -25904,7 +26188,7 @@ nolink "false"
 ) 
 \begin_inset CommandInset citation
 LatexCommand citep
-key "Ateshian2018"
+key "Ateshian18"
 literal "true"
 
 \end_inset
@@ -25967,8 +26251,8 @@ where
 
  in this case) is at the current time step 
 \begin_inset CommandInset citation
-LatexCommand cite
-key "Jansen2000a"
+LatexCommand citep
+key "Jansen00"
 literal "true"
 
 \end_inset
@@ -26828,7 +27112,7 @@ nolink "false"
  The virtual work statement for a Galerkin finite element formulation 
 \begin_inset CommandInset citation
 LatexCommand citep
-key "Bonet2008"
+key "Bonet97"
 literal "true"
 
 \end_inset
@@ -33315,9 +33599,9 @@ Starting with FEBio 2.6,
  two shell formulations have become available:
  The original formulation,
  where nodes are located at the mid-surface through the thickness of the shell,
- and a new formulation where nodes are located on the front face of the shell.
+ and a new formulation where nodes are located on the top face of the shell.
  The original formulation uses nodal displacements and directors as degrees of freedom;
- the new formulation uses front and back face nodal displacements.
+ the new formulation uses top and bottom face nodal displacements.
  The new formulation is designed to properly accommodate shells attached to the surface of a solid element,
  or shells sandwiched between two solid elements,
  with minimal alterations to the rest of the code.
@@ -33969,7 +34253,7 @@ Different shell elements available in FEBio.
 \end_layout
 
 \begin_layout Subsection
-Shells with front and back face nodal displacements
+Shells with top and bottom face nodal displacements
 \begin_inset CommandInset label
 LatexCommand label
 name "subsec:Shells-front-back"
@@ -33985,7 +34269,7 @@ We create a shell formulation by reducing a 3D element interpolation which is li
 \end_inset
 
 .
- The nodal positions at the back of the shell (
+ The nodal positions at the bottom of the shell (
 \begin_inset Formula $\xi_{3}=-1$
 \end_inset
 
@@ -33993,7 +34277,7 @@ We create a shell formulation by reducing a 3D element interpolation which is li
 \begin_inset Formula $\mathbf{y}_{a}$
 \end_inset
 
- and those on the front of the shell (
+ and those on the top of the shell (
 \begin_inset Formula $\xi_{3}=+1$
 \end_inset
 
@@ -34231,22 +34515,22 @@ For this formulation,
 
 .
  Similarly,
- prescribed pressures and contact pressures act on the shell front face.
+ prescribed pressures and contact pressures act on the shell top face.
 \end_layout
 
 \begin_layout Standard
 When a shell element is sandwiched between two solid elements,
- the nodal displacements of the solid element facing the shell back face are set to coincide with the shell back-face nodal displacements 
+ the nodal displacements of the solid element facing the shell bottom face are set to coincide with the shell back-face nodal displacements 
 \begin_inset Formula $\mathbf{w}_{b}$
 \end_inset
 
 ,
- whereas the nodal displacements of the solid element facing the shell front face are set to coincide with the shell front-face nodal displacements 
+ whereas the nodal displacements of the solid element facing the shell top face are set to coincide with the shell front-face nodal displacements 
 \begin_inset Formula $\mathbf{u}_{a}$
 \end_inset
 
 .
- If the shell thickness exceeds the thickness of the solid element connected to its back face,
+ If the shell thickness exceeds the thickness of the solid element connected to its bottom face,
  results become unpredictable.
 \end_layout
 
@@ -34418,7 +34702,7 @@ External work of surface forces
 \end_layout
 
 \begin_layout Standard
-We assume that surface forces are applied on the shell front face (
+We assume that surface forces are applied on the shell top face (
 \begin_inset Formula $\xi_{3}=+1$
 \end_inset
 
@@ -34443,7 +34727,7 @@ Shell on top of solid element
 
 \begin_layout Standard
 When a shell is coincident with the face of a solid element,
- we assume that the face of the solid element coincides with the back face (
+ we assume that the face of the solid element coincides with the bottom face (
 \begin_inset Formula $\xi_{3}=-1$
 \end_inset
 
@@ -34480,7 +34764,7 @@ When a shell is sandwiched between two solid elements,
 \begin_inset Formula $\mathbf{u}_{b}$
 \end_inset
 
- displacements facing the back of the shell to those of the shell 
+ displacements facing the bottom of the shell to those of the shell 
 \begin_inset Formula $\mathbf{w}_{b}$
 \end_inset
 
@@ -34489,7 +34773,7 @@ When a shell is sandwiched between two solid elements,
 \begin_inset Formula $\mathbf{u}_{b}$
 \end_inset
 
- displacements facing the front of the shell remain unchanged;
+ displacements facing the top of the shell remain unchanged;
  they will coincide with those of the corresponding solid element nodes.
 \end_layout
 
@@ -34500,7 +34784,7 @@ Rigid-Shell Interface
 \begin_layout Standard
 When the node of a deformable shell belongs to a rigid body,
  we need to substitute the nodal degrees of freedom with the rigid body degrees of freedom.
- The positions of the shell front face and back face nodes are 
+ The positions of the shell top face and bottom face nodes are 
 \begin_inset Formula 
 \begin{equation}
 \begin{aligned}\mathbf{x}_{b} & =\mathbf{r}+\boldsymbol{\Lambda}\cdot\left(\mathbf{X}_{b}-\mathbf{R}\right)\equiv\mathbf{r}+\mathbf{a}_{b}\\
@@ -38873,24 +39157,7 @@ literal "false"
  though we make minor modifications and extensions to his presentation here.
  Consider that the microstructural model of this viscoelastic material consists of a spring and dashpot in series (a Maxwell model),
  combined with a spring in parallel,
- which is equivalent to the Maxwell representation of a standard linear solid in linear viscoelasticity (
-\begin_inset ERT
-status open
-
-\begin_layout Plain Layout
-
-
-\backslash
-figurename
-\end_layout
-
-\end_inset
-
-
-\begin_inset space ~
-\end_inset
-
-
+ which is equivalent to the Maxwell representation of a standard linear solid in linear viscoelasticity (Figure 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "fig:spring-dashpot-model"
@@ -40757,24 +41024,7 @@ literal "false"
 \begin_inset Formula $\tau_{1}\le\tau\le\tau_{2}$
 \end_inset
 
- it takes the form (
-\begin_inset ERT
-status open
-
-\begin_layout Plain Layout
-
-
-\backslash
-figurename
-\end_layout
-
-\end_inset
-
-
-\begin_inset space ~
-\end_inset
-
-
+ it takes the form (Figure 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "fig:Malkin-relaxation-spectrum"
@@ -40881,24 +41131,7 @@ nolink "false"
 
 \end_inset
 
- this continuous relaxation spectrum produces the reduced relaxation function (
-\begin_inset ERT
-status open
-
-\begin_layout Plain Layout
-
-
-\backslash
-figurename
-\end_layout
-
-\end_inset
-
-
-\begin_inset space ~
-\end_inset
-
-
+ this continuous relaxation spectrum produces the reduced relaxation function (Figure 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "fig:Malkin-reduced-relaxation"
@@ -41032,24 +41265,7 @@ nolink "false"
 \end_layout
 
 \begin_layout Standard
-Another example for a continuous relaxation spectrum is the exponential spectrum (
-\begin_inset ERT
-status open
-
-\begin_layout Plain Layout
-
-
-\backslash
-figurename
-\end_layout
-
-\end_inset
-
-
-\begin_inset space ~
-\end_inset
-
-
+Another example for a continuous relaxation spectrum is the exponential spectrum (Figure 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "fig:exponential-relaxation-spectrum"
@@ -41142,24 +41358,7 @@ where
 \end_inset
 
  is the modified Bessel function of the second kind,
- of order 1 (
-\begin_inset ERT
-status open
-
-\begin_layout Plain Layout
-
-
-\backslash
-figurename
-\end_layout
-
-\end_inset
-
-
-\begin_inset space ~
-\end_inset
-
-
+ of order 1 (Figure 
 \begin_inset CommandInset ref
 LatexCommand eqref
 reference "fig:relaxation-continuous-exponential"
@@ -41369,7 +41568,7 @@ nolink "false"
  often called a Voigt model in linear viscoelasticity 
 \begin_inset CommandInset citation
 LatexCommand citep
-key "Bland60,Coleman61"
+key "Bland16,Coleman61"
 literal "false"
 
 \end_inset
@@ -47651,6 +47850,13 @@ Here,
 
 \begin_layout Section
 Viscous Fluids
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Viscous-Fluids"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
@@ -50627,7 +50833,7 @@ nolink "false"
  For second-order systems these parameters may be evaluated from 
 \begin_inset CommandInset citation
 LatexCommand citep
-key "Bazilevs2008"
+key "Bazilevs08"
 literal "true"
 
 \end_inset
@@ -52252,9 +52458,6 @@ literal "false"
 \size normal
 \emph off
 \bar no
-\strikeout off
-\uuline off
-\uwave off
 \noun off
 \color none
  
@@ -52268,9 +52471,6 @@ literal "false"
 \size default
 \emph default
 \bar default
-\strikeout default
-\uuline default
-\uwave default
 \noun default
 \color inherit
  and 
@@ -55975,7 +56175,7 @@ literal "true"
  and reference 
 \begin_inset CommandInset citation
 LatexCommand citep
-key "Zimmerman21a"
+key "Zimmerman22"
 literal "false"
 
 \end_inset
@@ -55984,7 +56184,7 @@ literal "false"
  The presentation here follows that of 
 \begin_inset CommandInset citation
 LatexCommand citep
-key "Zimmerman21a"
+key "Zimmerman22"
 literal "false"
 
 \end_inset
@@ -65783,11 +65983,7 @@ The position of a node shared by any number of deformable finite elements is den
 \end_inset
 
  by 
-\begin_inset CommandInset ref
-LatexCommand eqref
-reference "eq34"
-nolink "false"
-
+\begin_inset Formula $\mathbf{x}=\mathbf{X}+\mathbf{u}$
 \end_inset
 
 ;

@@ -26,6 +26,7 @@ SOFTWARE.*/
 #pragma once
 #include "FEContactInterface.h"
 #include "FEContactSurface.h"
+#include <FECore/FENodeNodeList.h>
 #include <set>
 
 class FEContactPotentialSurface : public FEContactSurface
@@ -59,8 +60,11 @@ typedef FEContactPotentialSurface::Data FECPContactPoint;
 
 class FEContactPotential : public FEContactInterface
 {
+	class Grid;
+
 public:
 	FEContactPotential(FEModel* fem);
+	~FEContactPotential();
 
 	// -- From FESurfacePairConstraint
 public:
@@ -104,6 +108,9 @@ protected:
 
 	void UpdateSurface(FESurface& surface);
 
+	//! checks for edge-face intersections
+	bool CheckIntersections(Grid& grid);
+
 protected:
 	FEContactPotentialSurface	m_surf1;
 	FEContactPotentialSurface	m_surf2;
@@ -115,11 +122,13 @@ protected:
 	double	m_Rout;
 	double	m_Rmin;
 	double	m_wtol;
+	bool	m_checkIntersections;	//!< check for edge/face intersections
 
 	double	m_c1, m_c2;
 
 	std::vector< std::set<FESurfaceElement*> >	m_activeElements;
 	std::vector< std::set<FESurfaceElement*> >	m_elemNeighbors;
+	FENodeNodeList m_NNL;
 
 	DECLARE_FECORE_CLASS();
 };

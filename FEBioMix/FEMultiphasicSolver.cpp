@@ -69,13 +69,13 @@ BEGIN_FECORE_CLASS(FEMultiphasicSolver, FENewtonSolver)
 	END_PARAM_GROUP();
 
 	// obsolete parameters
-	ADD_PARAMETER(m_rhoi     , "rhoi"            )->SetFlags(FE_PARAM_HIDDEN);
-	ADD_PARAMETER(m_alpha    , "alpha"           )->SetFlags(FE_PARAM_HIDDEN);
-	ADD_PARAMETER(m_beta     , "beta"            )->SetFlags(FE_PARAM_HIDDEN);
-	ADD_PARAMETER(m_gamma    , "gamma"           )->SetFlags(FE_PARAM_HIDDEN);
-	ADD_PARAMETER(m_logSolve , "logSolve"        )->SetFlags(FE_PARAM_HIDDEN);
-	ADD_PARAMETER(m_arcLength, "arc_length"      )->SetFlags(FE_PARAM_HIDDEN);
-	ADD_PARAMETER(m_al_scale , "arc_length_scale")->SetFlags(FE_PARAM_HIDDEN);
+	ADD_PARAMETER(m_rhoi     , "rhoi"            )->SetFlags(FE_PARAM_OBSOLETE);
+	ADD_PARAMETER(m_alpha    , "alpha"           )->SetFlags(FE_PARAM_OBSOLETE);
+	ADD_PARAMETER(m_beta     , "beta"            )->SetFlags(FE_PARAM_OBSOLETE);
+	ADD_PARAMETER(m_gamma    , "gamma"           )->SetFlags(FE_PARAM_OBSOLETE);
+	ADD_PARAMETER(m_logSolve , "logSolve"        )->SetFlags(FE_PARAM_OBSOLETE);
+	ADD_PARAMETER(m_arcLength, "arc_length"      )->SetFlags(FE_PARAM_OBSOLETE);
+	ADD_PARAMETER(m_al_scale , "arc_length_scale")->SetFlags(FE_PARAM_OBSOLETE);
 
 END_FECORE_CLASS();
 
@@ -752,7 +752,7 @@ bool FEMultiphasicSolver::StiffnessMatrix()
 	// get the mesh
 	FEMesh& mesh = fem.GetMesh();
 
-	FESolidLinearSystem LS(this, &m_rigidSolver, *m_pK, m_Fd, m_ui, (m_msymm == REAL_SYMMETRIC), m_alpha, m_nreq);
+	FESolidLinearSystem LS(&fem, &m_rigidSolver, *m_pK, m_Fd, m_ui, (m_msymm == REAL_SYMMETRIC), m_alpha, m_nreq);
 
 	// calculate the stiffness matrix for each domain
 	FEAnalysis* pstep = fem.GetCurrentStep();

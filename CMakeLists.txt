@@ -159,11 +159,9 @@ endif()
 ##### Find Source Files #####
 
 macro(findHdrSrc name)
-	file(GLOB HDR_${name} "${name}/*.h")
+	file(GLOB HDR_${name} "${name}/*.h*")
 	file(GLOB SRC_${name} "${name}/*.cpp")
 endmacro()
-
-findHdrSrc(FEBioStudio)
 
 foreach(name IN LISTS FEBIO_LIBS)
 	findHdrSrc(${name})
@@ -197,8 +195,9 @@ foreach(name IN LISTS STATIC_FEBIO_LIBS)
 endforeach(name)
 
 ##### Set up executable compilation #####
+file(GLOB HEADERS "FEBio/*.h")
 file(GLOB SOURCES "FEBio/*.cpp")
-add_executable (febio4 ${SOURCES})
+add_executable (febio4 ${HEADERS} ${SOURCES})
 
 if(WIN32)
     target_compile_options(febio4 PRIVATE /openmp)
@@ -260,7 +259,11 @@ if(EXISTS ${CMAKE_SOURCE_DIR}/.git)
             crossExecProcess(DEVCOMMIT)
             
             if(${SUCCESS} EQUAL 0)
-                target_compile_definitions(febiolib PUBLIC "DEVCOMMIT=\"${DEVCOMMIT}\"")
+                set_source_files_properties(
+                    FEBioLib/version.cpp
+                    PROPERTIES
+                    COMPILE_DEFINITIONS "DEVCOMMIT=\"${DEVCOMMIT}\""
+                )
             endif()
         endif()
     else()
@@ -308,23 +311,30 @@ if(USE_MKL)
     target_include_directories(febioopt PRIVATE ${MKL_INC})
 	target_compile_definitions(febioopt PRIVATE MKL_ISS PARDISO)
 
+	target_include_directories(feimglib PRIVATE ${MKL_INC})
+    target_compile_definitions(feimglib PRIVATE HAVE_MKL)
+
     if(WIN32 OR APPLE)
         target_link_libraries(numcore PRIVATE ${MKL_OMP_LIB} ${MKL_LIBS})
         target_link_libraries(febioopt PRIVATE ${MKL_OMP_LIB} ${MKL_LIBS})
+        target_link_libraries(feimglib PRIVATE ${MKL_OMP_LIB} ${MKL_LIBS})
     else()
         target_link_libraries(numcore PRIVATE -Wl,--start-group ${MKL_OMP_LIB} ${MKL_LIBS} -Wl,--end-group)
         target_link_libraries(febioopt PRIVATE -Wl,--start-group ${MKL_OMP_LIB} ${MKL_LIBS} -Wl,--end-group)
+        target_link_libraries(feimglib PRIVATE -Wl,--start-group ${MKL_OMP_LIB} ${MKL_LIBS} -Wl,--end-group)
     endif()
     
     if(FORCE_SYSTEM_OMP)
         target_link_libraries(numcore PRIVATE ${OpenMP_C_LIBRARIES})
         target_link_libraries(febioopt PRIVATE ${OpenMP_C_LIBRARIES})
+        target_link_libraries(feimglib PRIVATE ${OpenMP_C_LIBRARIES})
     endif()
 else()
     # If not using MKL, we still need OpenMP from the system.
     if(${OpenMP_C_FOUND})
         target_link_libraries(numcore PRIVATE ${OpenMP_C_LIBRARIES})
         target_link_libraries(febioopt PRIVATE ${OpenMP_C_LIBRARIES})
+        target_link_libraries(feimglib PRIVATE ${OpenMP_C_LIBRARIES})
     endif()
 endif()
 

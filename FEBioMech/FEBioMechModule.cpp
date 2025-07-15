@@ -78,6 +78,7 @@ SOFTWARE.*/
 #include "FEHuiskesSupply.h"
 #include "FEIncompNeoHookean.h"
 #include "FEIsotropicElastic.h"
+#include "FEIsoHencky.h"
 #include "FEMooneyRivlin.h"
 #include "FEMooneyRivlinAD.h"
 #include "FEMRVonMisesFibers.h"
@@ -177,7 +178,9 @@ SOFTWARE.*/
 #include "FEScaledUncoupledMaterial.h"
 
 #include "FEPressureLoad.h"
+#include "FEPressureRobinBC.h"
 #include "FETractionLoad.h"
+#include "FETractionRobinBC.h"
 #include "FESurfaceForceUniform.h"
 #include "FEBearingLoad.h"
 #include "FEIdealGasPressure.h"
@@ -187,7 +190,8 @@ SOFTWARE.*/
 #include "FESurfaceAttractionBodyForce.h"
 #include "FEMassDamping.h"
 #include "FEMovingFrameLoad.h"
-
+#include "FERadialBodyForce.h"
+#include "FEAxialBodyForce.h"
 #include "FEFacet2FacetSliding.h"
 #include "FEPeriodicBoundary.h"
 #include "FERigidWallInterface.h"
@@ -273,6 +277,7 @@ SOFTWARE.*/
 #include "FESpringRuptureCriterion.h"
 #include "FEContactGapCriterion.h"
 
+#include "FEInitialDisplacement.h"
 #include "FEInitialVelocity.h"
 #include "FENodalForce.h"
 #include "FENodalTargetForce.h"
@@ -283,6 +288,7 @@ SOFTWARE.*/
 #include "FEInSituStretchGradient.h"
 #include "FEPreStrainConstraint.h"
 #include "FEInitialPreStrain.h"
+#include "FEInitialRigidKinematics.h"
 
 #include "FENodeToNodeConstraint.h"
 
@@ -293,6 +299,8 @@ SOFTWARE.*/
 #include "FESolidAnalysis.h"
 
 #include "FEElasticBeamMaterial.h"
+#include "FETiedLineConstraint.h"
+#include "FESlideLineConstraint.h"
 
 //-----------------------------------------------------------------------------
 //! Register all the classes of the FEBioMech module with the FEBio framework.
@@ -344,6 +352,7 @@ void FEBioMech::InitModule()
     REGISTER_FECORE_CLASS(FEHolmesMowUC, "uncoupled Holmes-Mow");
     REGISTER_FECORE_CLASS(FEHolzapfelUnconstrained, "HGO unconstrained");
 	REGISTER_FECORE_CLASS(FEIsotropicElastic, "isotropic elastic");
+    REGISTER_FECORE_CLASS(FEIsoHencky, "isotropic Hencky");
 	REGISTER_FECORE_CLASS(FECoupledMooneyRivlin, "coupled Mooney-Rivlin");
 	REGISTER_FECORE_CLASS(FECoupledVerondaWestmann, "coupled Veronda-Westmann");
 	REGISTER_FECORE_CLASS(FENaturalNeoHookean, "natural neo-Hookean");
@@ -384,8 +393,8 @@ void FEBioMech::InitModule()
 	REGISTER_FECORE_CLASS(FEReactiveViscoelasticMaterial, "reactive viscoelastic");
 	REGISTER_FECORE_CLASS(FEDamageMaterial, "elastic damage");
 	REGISTER_FECORE_CLASS(FERVEDamageMaterial, "reactive viscoelastic damage");
-	REGISTER_FECORE_CLASS(FEReactiveFatigue, "reactive fatigue", FECORE_EXPERIMENTAL);
-    REGISTER_FECORE_CLASS(FERVEFatigueMaterial, "reactive viscoelastic fatigue", FECORE_EXPERIMENTAL);
+	REGISTER_FECORE_CLASS(FEReactiveFatigue, "reactive fatigue");
+    REGISTER_FECORE_CLASS(FERVEFatigueMaterial, "reactive viscoelastic fatigue");
 	REGISTER_FECORE_CLASS(FEReactivePlasticity, "reactive plasticity");
 	REGISTER_FECORE_CLASS(FEReactivePlasticDamage, "reactive plastic damage");
 
@@ -422,7 +431,7 @@ void FEBioMech::InitModule()
 	REGISTER_FECORE_CLASS(FEPRLig, "PRLig");
 	REGISTER_FECORE_CLASS(FEUncoupledReactiveViscoelasticMaterial, "uncoupled reactive viscoelastic");
 	REGISTER_FECORE_CLASS(FEDamageMaterialUC, "uncoupled elastic damage");
-    REGISTER_FECORE_CLASS(FEUncoupledReactiveFatigue, "uncoupled reactive fatigue", FECORE_EXPERIMENTAL);
+    REGISTER_FECORE_CLASS(FEUncoupledReactiveFatigue, "uncoupled reactive fatigue");
 	REGISTER_FECORE_CLASS(FEGenericHyperelasticUC, "uncoupled hyperelastic");
 	REGISTER_FECORE_CLASS(FEGenericTransIsoHyperelasticUC, "uncoupled trans-iso hyperelastic");
 	REGISTER_FECORE_CLASS(FEIsotropicLeeSacks, "isotropic Lee-Sacks");
@@ -635,9 +644,11 @@ void FEBioMech::InitModule()
 
 	//-----------------------------------------------------------------------------
 	// classes derived from FEInitialCondition
+    REGISTER_FECORE_CLASS(FEInitialDisplacement, "displacement");
 	REGISTER_FECORE_CLASS(FEInitialVelocity, "velocity");
 	REGISTER_FECORE_CLASS(FEInitialShellVelocity, "shell velocity");
 	REGISTER_FECORE_CLASS(FEInitialPreStrain, "prestrain");
+	REGISTER_FECORE_CLASS(FEInitialRigidKinematics, "rigid kinematics");
 
 	//-----------------------------------------------------------------------------
 	// classes derived from FENodalLoad
@@ -651,6 +662,8 @@ void FEBioMech::InitModule()
 	REGISTER_FECORE_CLASS(FESurfaceForceUniform, "force");
 	REGISTER_FECORE_CLASS(FEBearingLoad, "bearing load");
 	REGISTER_FECORE_CLASS(FEIdealGasPressure, "ideal gas pressure");
+    REGISTER_FECORE_CLASS(FEPressureRobinBC, "pressure Robin BC");
+    REGISTER_FECORE_CLASS(FETractionRobinBC, "traction Robin BC");
 
 	//-----------------------------------------------------------------------------
 	// classes derived from FEBodyForce
@@ -663,6 +676,8 @@ void FEBioMech::InitModule()
 	REGISTER_FECORE_CLASS(FESurfaceAttractionBodyForce, "surface attraction");
 	REGISTER_FECORE_CLASS(FEMassDamping, "mass damping");
 	REGISTER_FECORE_CLASS(FEMovingFrameLoad, "moving frame");
+	REGISTER_FECORE_CLASS(FERadialBodyForce, "radial force");
+	REGISTER_FECORE_CLASS(FEAxialBodyForce, "axial force");
 
 	//-----------------------------------------------------------------------------
 	// constraint classes
@@ -711,6 +726,9 @@ void FEBioMech::InitModule()
 	
 	REGISTER_FECORE_CLASS(FEEdgeToSurfaceContactPotential, "edge-to-surface contact potential");
 	REGISTER_FECORE_CLASS(FEEdgeToSurfaceSlidingContact, "edge-to-surface sliding contact");
+
+	REGISTER_FECORE_CLASS(FETiedLineConstraint, "tied-line");
+	REGISTER_FECORE_CLASS(FESlideLineConstraint, "slide-line");
 
 	//-----------------------------------------------------------------------------
 	// classes derived directly from FERigidBC
@@ -801,6 +819,9 @@ void FEBioMech::InitModule()
 	REGISTER_FECORE_CLASS(FEPlotInfStrain, "infinitesimal strain");
 	REGISTER_FECORE_CLASS(FEPlotSPRLagrangeStrain, "SPR Lagrange strain");
 	REGISTER_FECORE_CLASS(FEPlotSPRInfStrain, "SPR infinitesimal strain");
+    REGISTER_FECORE_CLASS(FEPlotAlmansiStrain, "Almansi strain");
+    REGISTER_FECORE_CLASS(FEPlotRightCauchyGreen, "right Cauchy-Green");
+    REGISTER_FECORE_CLASS(FEPlotLeftCauchyGreen, "left Cauchy-Green");
     REGISTER_FECORE_CLASS(FEPlotRightStretch, "right stretch");
     REGISTER_FECORE_CLASS(FEPlotLeftStretch, "left stretch");
     REGISTER_FECORE_CLASS(FEPlotRightHencky, "right Hencky");
@@ -1012,6 +1033,15 @@ void FEBioMech::InitModule()
 	REGISTER_FECORE_CLASS(FELogElemPK2StressXY, "Sxy");
 	REGISTER_FECORE_CLASS(FELogElemPK2StressYZ, "Syz");
 	REGISTER_FECORE_CLASS(FELogElemPK2StressXZ, "Sxz");
+    REGISTER_FECORE_CLASS(FELogElemPK1StressXX, "Pxx");
+    REGISTER_FECORE_CLASS(FELogElemPK1StressYY, "Pyy");
+    REGISTER_FECORE_CLASS(FELogElemPK1StressZZ, "Pzz");
+    REGISTER_FECORE_CLASS(FELogElemPK1StressXY, "Pxy");
+    REGISTER_FECORE_CLASS(FELogElemPK1StressYZ, "Pyz");
+    REGISTER_FECORE_CLASS(FELogElemPK1StressZX, "Pzx");
+    REGISTER_FECORE_CLASS(FELogElemPK1StressZY, "Pzy");
+    REGISTER_FECORE_CLASS(FELogElemPK1StressXZ, "Pxz");
+    REGISTER_FECORE_CLASS(FELogElemPK1StressYX, "Pyx");
 	REGISTER_FECORE_CLASS_T2(FELogElemStressEigenVector_T, 0, 0, "s1x");
 	REGISTER_FECORE_CLASS_T2(FELogElemStressEigenVector_T, 0, 1, "s1y");
 	REGISTER_FECORE_CLASS_T2(FELogElemStressEigenVector_T, 0, 2, "s1z");
@@ -1152,6 +1182,38 @@ void FEBioMech::InitModule()
 	REGISTER_FECORE_CLASS(FELogRigidBodyTorqueY, "My");
 	REGISTER_FECORE_CLASS(FELogRigidBodyTorqueZ, "Mz");
 	REGISTER_FECORE_CLASS(FELogRigidBodyKineticEnergy, "KE");
+    REGISTER_FECORE_CLASS(FELogRigidBodyIHAwx, "IHAwx");
+    REGISTER_FECORE_CLASS(FELogRigidBodyIHAwy, "IHAwy");
+    REGISTER_FECORE_CLASS(FELogRigidBodyIHAwz, "IHAwz");
+    REGISTER_FECORE_CLASS(FELogRigidBodyIHAwm, "IHAwm");
+    REGISTER_FECORE_CLASS(FELogRigidBodyIHAsx, "IHAsx");
+    REGISTER_FECORE_CLASS(FELogRigidBodyIHAsy, "IHAsy");
+    REGISTER_FECORE_CLASS(FELogRigidBodyIHAsz, "IHAsz");
+    REGISTER_FECORE_CLASS(FELogRigidBodyIHAtd, "IHAtd");
+    REGISTER_FECORE_CLASS(FELogRigidBodyFHAwx, "FHAwx");
+    REGISTER_FECORE_CLASS(FELogRigidBodyFHAwy, "FHAwy");
+    REGISTER_FECORE_CLASS(FELogRigidBodyFHAwz, "FHAwz");
+    REGISTER_FECORE_CLASS(FELogRigidBodyFHAwm, "FHAwm");
+    REGISTER_FECORE_CLASS(FELogRigidBodyFHAsx, "FHAsx");
+    REGISTER_FECORE_CLASS(FELogRigidBodyFHAsy, "FHAsy");
+    REGISTER_FECORE_CLASS(FELogRigidBodyFHAsz, "FHAsz");
+    REGISTER_FECORE_CLASS(FELogRigidBodyFHAtd, "FHAtd");
+    REGISTER_FECORE_CLASS(FELogRigidConnectorIHAwx, "rcIHAwx");
+    REGISTER_FECORE_CLASS(FELogRigidConnectorIHAwy, "rcIHAwy");
+    REGISTER_FECORE_CLASS(FELogRigidConnectorIHAwz, "rcIHAwz");
+    REGISTER_FECORE_CLASS(FELogRigidConnectorIHAwm, "rcIHAwm");
+    REGISTER_FECORE_CLASS(FELogRigidConnectorIHAsx, "rcIHAsx");
+    REGISTER_FECORE_CLASS(FELogRigidConnectorIHAsy, "rcIHAsy");
+    REGISTER_FECORE_CLASS(FELogRigidConnectorIHAsz, "rcIHAsz");
+    REGISTER_FECORE_CLASS(FELogRigidConnectorIHAtd, "rcIHAtd");
+    REGISTER_FECORE_CLASS(FELogRigidConnectorFHAwx, "rcFHAwx");
+    REGISTER_FECORE_CLASS(FELogRigidConnectorFHAwy, "rcFHAwy");
+    REGISTER_FECORE_CLASS(FELogRigidConnectorFHAwz, "rcFHAwz");
+    REGISTER_FECORE_CLASS(FELogRigidConnectorFHAwm, "rcFHAwm");
+    REGISTER_FECORE_CLASS(FELogRigidConnectorFHAsx, "rcFHAsx");
+    REGISTER_FECORE_CLASS(FELogRigidConnectorFHAsy, "rcFHAsy");
+    REGISTER_FECORE_CLASS(FELogRigidConnectorFHAsz, "rcFHAsz");
+    REGISTER_FECORE_CLASS(FELogRigidConnectorFHAtd, "rcFHAtd");
 
 	//-----------------------------------------------------------------------------
 	// Derived from FELogConnectorData

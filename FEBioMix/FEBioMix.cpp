@@ -345,6 +345,15 @@ void FEBioMix::InitModule()
 	//-----------------------------------------------------------------------------
 	// classes derived from FELogNodeData
 	REGISTER_FECORE_CLASS(FENodeConcentration, "c");
+    REGISTER_FECORE_CLASS(FENodeFluidPressure, "pe");
+    REGISTER_FECORE_CLASS_T(FENodeSoluteConcentration_T, 0, "ce1");
+    REGISTER_FECORE_CLASS_T(FENodeSoluteConcentration_T, 1, "ce2");
+    REGISTER_FECORE_CLASS_T(FENodeSoluteConcentration_T, 2, "ce3");
+    REGISTER_FECORE_CLASS_T(FENodeSoluteConcentration_T, 3, "ce4");
+    REGISTER_FECORE_CLASS_T(FENodeSoluteConcentration_T, 4, "ce5");
+    REGISTER_FECORE_CLASS_T(FENodeSoluteConcentration_T, 5, "ce6");
+    REGISTER_FECORE_CLASS_T(FENodeSoluteConcentration_T, 6, "ce7");
+    REGISTER_FECORE_CLASS_T(FENodeSoluteConcentration_T, 7, "ce8");
 
 	//-----------------------------------------------------------------------------
 	// Element log data
@@ -488,6 +497,15 @@ void FEBioMix::InitModule()
 	REGISTER_FECORE_CLASS_T(FELogElemSBMConcentration_T, 5, "sbm6");
 	REGISTER_FECORE_CLASS_T(FELogElemSBMConcentration_T, 6, "sbm7");
 	REGISTER_FECORE_CLASS_T(FELogElemSBMConcentration_T, 7, "sbm8");
+
+	REGISTER_FECORE_CLASS_T(FELogSBMRefAppDensity_T, 1, "sbm1_referential_apparent_density");
+	REGISTER_FECORE_CLASS_T(FELogSBMRefAppDensity_T, 2, "sbm2_referential_apparent_density");
+	REGISTER_FECORE_CLASS_T(FELogSBMRefAppDensity_T, 3, "sbm3_referential_apparent_density");
+	REGISTER_FECORE_CLASS_T(FELogSBMRefAppDensity_T, 4, "sbm4_referential_apparent_density");
+	REGISTER_FECORE_CLASS_T(FELogSBMRefAppDensity_T, 5, "sbm5_referential_apparent_density");
+	REGISTER_FECORE_CLASS_T(FELogSBMRefAppDensity_T, 6, "sbm6_referential_apparent_density");
+	REGISTER_FECORE_CLASS_T(FELogSBMRefAppDensity_T, 7, "sbm7_referential_apparent_density");
+	REGISTER_FECORE_CLASS_T(FELogSBMRefAppDensity_T, 8, "sbm8_referential_apparent_density");
 
 	//-----------------------------------------------------------------------------
 	// domain log data

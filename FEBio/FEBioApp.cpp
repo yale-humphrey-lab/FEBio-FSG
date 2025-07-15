@@ -150,7 +150,11 @@ int FEBioApp::RunModel()
 
 	// add console stream to log file
 	if (m_ops.bsilent == false)
+	{
 		fem.GetLogFile().SetLogStream(new ConsoleStream);
+		if (m_ops.bupdateTitle == false)
+			Console::GetHandle()->Deactivate(); // This doesn't really deactive the console, it just prevents the title from getting updated.
+	}
 	else
 		Console::GetHandle()->Deactivate();
 
@@ -170,6 +174,8 @@ int FEBioApp::RunModel()
 	fem.SetDumpFilename(m_ops.szdmp);
 
 	fem.SetAppendOnRestart(m_ops.bappendFiles);
+
+	if (!m_ops.boutputLog) fem.SetLogLevel(0);
 
 	// read the input file if specified
 	int nret = 0;
@@ -370,6 +376,14 @@ bool FEBioApp::ParseCmdLine(int nargs, char* argv[])
 		{
 			// no output to screen
 			ops.bsilent = true;
+		}
+		else if (strcmp(sz, "-no_title") == 0)
+		{
+			ops.bupdateTitle = false;
+		}
+		else if (strcmp(sz, "-no_log") == 0)
+		{
+			ops.boutputLog = false;
 		}
 		else if (strcmp(sz, "-cnf") == 0)	// obsolete: use -config instead
 		{

@@ -986,9 +986,83 @@ void XMLReader::ReadValue(XMLTag& tag)
 	{
 		tag.m_szval.clear();
 		tag.m_szval.reserve(256);
-		while ((ch=GetChar())!='<') 
+		while (true) 
 		{
-			tag.m_szval.push_back(ch);
+			ch = GetChar();
+
+			// look for CDATA section
+			if (ch == '<')
+			{
+				char ch2 = readNextChar();
+				if (ch2 == '!')
+				{
+					// this is a CDATA section
+					char szbuf[10] = { 0 };
+					szbuf[0] = '<';
+					szbuf[1] = '!';
+					int i = 2;
+					do
+					{
+						ch = readNextChar();
+						szbuf[i++] = ch;
+					} while (i < 9);
+					if (strcmp(szbuf, "<![CDATA[") == 0)
+					{
+						while (true)
+						{
+							ch = readNextChar();
+							if (ch == ']')
+							{
+								char ch3 = readNextChar();
+								if (ch3 == ']')
+								{
+									char ch4 = readNextChar();
+									if (ch4 == '>')
+									{
+										ch = '\0';// set to null to avoid skipping over next char
+										break;
+									}
+									else tag.m_szval.push_back(ch);
+								}
+								else tag.m_szval.push_back(ch);
+							}
+							else tag.m_szval.push_back(ch);
+						}
+					}
+					else throw XMLSyntaxError(m_nline);
+				}
+				else
+				{
+					rewind(1);
+					break;
+				}
+			}
+
+			// read entity references
+			if (ch == '&')
+			{
+				char szbuf[16] = { 0 };
+				szbuf[0] = '&';
+				int i = 1;
+				do
+				{
+					ch = readNextChar();
+					szbuf[i++] = ch;
+				} while ((i < 16) && (ch != ';'));
+				if (ch != ';') throw XMLSyntaxError(m_nline);
+
+				if (strcmp(szbuf, "&lt;") == 0) ch = '<';
+				else if (strcmp(szbuf, "&gt;") == 0) ch = '>';
+				else if (strcmp(szbuf, "&amp;") == 0) ch = '&';
+				else if (strcmp(szbuf, "&apos;") == 0) ch = '\'';
+				else if (strcmp(szbuf, "&quot;") == 0) ch = '"';
+				else if ((strcmp(szbuf, "&#9;") == 0) || (strcmp(szbuf, "&#x9;") == 0)) ch = '\t';
+				else if ((strcmp(szbuf, "&#10;") == 0) || (strcmp(szbuf, "&#xA;") == 0)) ch = '\n';
+				else if ((strcmp(szbuf, "&#13;") == 0) || (strcmp(szbuf, "&#xD;") == 0)) ch = '\r';
+				else throw XMLSyntaxError(m_nline);
+			}
+
+			if (ch != '\0') tag.m_szval.push_back(ch);
 		}
 	}
 	else while ((ch=GetChar())!='<');
@@ -1131,8 +1205,15 @@ char XMLReader::GetChar()
 		char tmp = readNextChar();
 		if (tmp == '!')
 		{
-			m_comment.clear();
+			if (readNextChar() == '[')
+			{
+				// this is a CDATA section, not a comment
+				rewind(2);
+				return ch;
+			}
+			else rewind(1);
 
+			m_comment.clear();
 			// parse the comment
 			ch = readNextChar(); if (ch != '-') throw XMLSyntaxError(m_nline);
 			ch = readNextChar(); if (ch != '-') throw XMLSyntaxError(m_nline);
@@ -1158,32 +1239,10 @@ char XMLReader::GetChar()
 
 			ch = readNextChar();
 		}
-		else rewind(1);
-	}
-
-	// read entity references
-	if (ch=='&')
-	{
-		char szbuf[16]={0};
-		szbuf[0] = '&';
-		int i = 1;
-		do
+		else
 		{
-			ch = readNextChar();
-			szbuf[i++]=ch;
+			rewind(1);
 		}
-		while ((i<16)&&(ch!=';'));
-		if (ch!=';') throw XMLSyntaxError(m_nline);
-
-		if      (strcmp(szbuf, "&lt;"  )==0) ch = '<';
-		else if (strcmp(szbuf, "&gt;"  )==0) ch = '>';
-		else if (strcmp(szbuf, "&amp;" )==0) ch = '&';
-		else if (strcmp(szbuf, "&apos;")==0) ch = '\'';
-		else if (strcmp(szbuf, "&quot;")==0) ch = '"';
-		else if ((strcmp(szbuf, "&#9;" ) == 0) || (strcmp(szbuf, "&#x9;") == 0)) ch = '\t';
-		else if ((strcmp(szbuf, "&#10;") == 0) || (strcmp(szbuf, "&#xA;") == 0)) ch = '\n';
-		else if ((strcmp(szbuf, "&#13;") == 0) || (strcmp(szbuf, "&#xD;") == 0)) ch = '\r';
-		else throw XMLSyntaxError(m_nline);
 	}
 	return ch;
 }

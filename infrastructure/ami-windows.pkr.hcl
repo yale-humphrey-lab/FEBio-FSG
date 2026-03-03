@@ -12,13 +12,13 @@ locals {
   intel_basekit          = "w_BaseKit_p_2022.2.0.252_offline.exe"
   intel_basekit_uri      = "https://registrationcenter-download.intel.com/akdlm/IRC_NAS/18674/${local.intel_basekit}"
   intel_install_windows  = "https://raw.githubusercontent.com/oneapi-src/oneapi-ci/master/scripts/install_windows.bat"
-  vs_2019_buildtools_bin = "vs_buildtools.exe"
-  vs_2019_buildtools_uri = "https://aka.ms/vs/16/release/${local.vs_2019_buildtools_bin}"
+  vs_2022_buildtools_bin = "vs_buildtools.exe"
+  vs_2022_buildtools_uri = "https://aka.ms/vs/17/release/${local.vs_2022_buildtools_bin}"
   installation_path      = var.installation_path
 }
 
 variable "installation_path" {
-  default = "c:\\usr\local"
+  default = "c:\\usr\\local"
 }
 
 data "amazon-parameterstore" "winrm_password" {
@@ -68,7 +68,7 @@ source "amazon-ebs" "windows" {
   launch_block_device_mappings {
     device_name           = "/dev/sda1"
     volume_size           = 100
-    volume_type           = "gp2"
+    volume_type           = "gp3"
     delete_on_termination = true
   }
 }
@@ -87,9 +87,9 @@ build {
   # VS Build tools
   provisioner "windows-shell" {
     inline = [
-      "curl -L -O ${local.vs_2019_buildtools_uri}",
-      "start /wait ${local.vs_2019_buildtools_bin} --add Microsoft.VisualStudio.Workload.VCTools --includeOptional --includeRecommended --quiet --nocache --wait",
-      "del ${local.vs_2019_buildtools_bin}",
+      "curl -L -O ${local.vs_2022_buildtools_uri}",
+      "start /wait ${local.vs_2022_buildtools_bin} --add Microsoft.VisualStudio.Workload.VCTools --includeOptional --includeRecommended --quiet --nocache --wait",
+      "del ${local.vs_2022_buildtools_bin}",
     ]
   }
 
@@ -104,9 +104,9 @@ build {
   # paths
   #provisioner "powershell" {
   #  inline = [<<EOF
-$u#serpath=[Environment]::GetEnvironmentVariable("Path", "User")
-se#tx PATH "$userpath;${local.installation_path}"
-EO#F
+# $userpath=[Environment]::GetEnvironmentVariable("Path", "User")
+# setx PATH "$userpath;${local.installation_path}"
+# EOF
   #  ]
   #}
 
@@ -147,7 +147,8 @@ EO#F
   # # sysprep for next launch
   provisioner "powershell" {
     inline = [
-      "C:\\ProgramData\\Amazon\\EC2-Windows\\Launch\\Scripts\\InitializeInstance.ps1 -Schedule",
+        "C:\\ProgramData\\Amazon\\EC2-Windows\\Launch\\Scripts\\InitializeInstance.ps1 -Schedule",
     ]
   }
+
 }

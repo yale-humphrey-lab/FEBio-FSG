@@ -639,9 +639,12 @@ bool FEPlotContactPenalty::Save(FESurface& surf, FEDataStream& a)
 		FEFacetSlidingSurface* ps = dynamic_cast<FEFacetSlidingSurface*>(&surf);
 		if (ps)
 		{
-			writeAverageElementValue<double>(surf, a, [](const FEMaterialPoint& mp) {
+			FEFacet2FacetSliding* pf2f = dynamic_cast<FEFacet2FacetSliding*>(pci);
+			double eps = (pf2f ? pf2f->m_epsn : 1);
+
+			writeAverageElementValue<double>(surf, a, [=](const FEMaterialPoint& mp) {
 				const FEFacetSlidingSurface::Data* pt = dynamic_cast<const FEFacetSlidingSurface::Data*>(&mp);
-				return (pt ? pt->m_eps : 0);
+				return (pt ? eps*pt->m_eps : 0);
 				});
 			return true;
 		}
@@ -649,9 +652,11 @@ bool FEPlotContactPenalty::Save(FESurface& surf, FEDataStream& a)
 		FESlidingElasticSurface* pse = dynamic_cast<FESlidingElasticSurface*>(&surf);
 		if (pse)
 		{
-			writeAverageElementValue<double>(surf, a, [](const FEMaterialPoint& mp) {
+			FESlidingElasticInterface* psei = dynamic_cast<FESlidingElasticInterface*>(pci);
+			double epsn = (psei ? psei->m_epsn : 1);
+			writeAverageElementValue<double>(surf, a, [=](const FEMaterialPoint& mp) {
 				const FESlidingElasticSurface::Data* pt = dynamic_cast<const FESlidingElasticSurface::Data*>(&mp);
-				return (pt ? pt->m_epsn : 0);
+				return (pt ? epsn*pt->m_epsn : 0);
 				});
 			return true;
 		}
@@ -663,7 +668,7 @@ bool FEPlotContactPenalty::Save(FESurface& surf, FEDataStream& a)
 //-----------------------------------------------------------------------------
 bool FEPlotContactStatus::Save(FESurface& surf, FEDataStream& a)
 {
-	FEFacetSlidingSurface* ps = dynamic_cast<FEFacetSlidingSurface*>(&surf);
+	FEContactSurface* ps = dynamic_cast<FEContactSurface*>(&surf);
 	if (ps == nullptr) return false;
 
 	// make sure the corresponding contact interface is active
@@ -960,6 +965,93 @@ bool FEPlotElementPK1Stress::Save(FEDomain& dom, FEDataStream& a)
 		});
 
 	return true;
+}
+
+//-----------------------------------------------------------------------------
+//! Store the average element plastic yield stress
+bool FEPlotElementPlasticYieldStress::Save(FEDomain& dom, FEDataStream& a)
+{
+    FESolidMaterial* pme = dom.GetMaterial()->ExtractProperty<FESolidMaterial>();
+    if ((pme == 0) || pme->IsRigid()) return false;
+    FEReactivePlasticity* pmp = pme->ExtractProperty<FEReactivePlasticity>();
+    if (pmp == nullptr) return false;
+
+    writeAverageElementValue<double>(dom, a, [](const FEMaterialPoint& mp) {
+        const FEReactivePlasticityMaterialPoint& pp = *mp.ExtractData<FEReactivePlasticityMaterialPoint>();
+        if (pp.m_Kv.size() > 0) return pp.m_Kv[0];
+        return 0.0;
+    });
+    
+    return true;
+}
+
+//-----------------------------------------------------------------------------
+//! Store the average element yield stress based on Drucker shear stress criterion
+bool FEPlotElementDruckerShear::Save(FEDomain& dom, FEDataStream& a)
+{
+    FESolidMaterial* pme = dom.GetMaterial()->ExtractProperty<FESolidMaterial>();
+    if ((pme == 0) || pme->IsRigid()) return false;
+    FEDamageCriterionDrucker* pmd = pme->ExtractProperty<FEDamageCriterionDrucker>();
+    if (pmd == nullptr) return false;
+
+    writeAverageElementValue<double>(dom, a, [&pmd](const FEMaterialPoint& mp) {
+        double c = pmd->m_c(mp);
+        const FEElasticMaterialPoint& ep = *mp.ExtractData< FEElasticMaterialPoint>();
+        mat3ds s = ep.m_s;    // Cauchy stress
+        mat3ds sdev = s.dev();
+        double J2 = 0.5*(sdev*sdev).trace();
+        double J3 = sdev.det();
+        double k = pow(pow(J2,3) - c*pow(J3,2),1./6.);
+        return k;
+        });
+
+    return true;
+}
+
+//-----------------------------------------------------------------------------
+//! Store the average element yield stress based on Prager-Drucker criterion
+bool FEPlotElementPragerDruckerStress::Save(FEDomain& dom, FEDataStream& a)
+{
+    FESolidMaterial* pme = dom.GetMaterial()->ExtractProperty<FESolidMaterial>();
+    if ((pme == 0) || pme->IsRigid()) return false;
+    FEDamageCriterionDruckerPrager* pmd = pme->ExtractProperty<FEDamageCriterionDruckerPrager>();
+    if (pmd == nullptr) return false;
+
+    writeAverageElementValue<double>(dom, a, [&pmd](const FEMaterialPoint& mp) {
+        double b = pmd->m_b(mp);
+        const FEElasticMaterialPoint& ep = *mp.ExtractData< FEElasticMaterialPoint>();
+        mat3ds s = ep.m_s;    // Cauchy stress
+        double se = sqrt((pow(s.xx()-s.yy(),2) + pow(s.yy()-s.zz(),2) + pow(s.zz()-s.xx(),2)
+                           + 6*(pow(s.xy(),2) + pow(s.yz(),2) + pow(s.xz(),2)))/2);
+        double sm = s.tr()/3;
+        double Phi = se - b*sm;
+        return Phi;
+        });
+
+    return true;
+}
+
+//-----------------------------------------------------------------------------
+//! Store the average element yield stress based on Deshpande-Fleck criterion
+bool FEPlotElementDeshpandeFleckStress::Save(FEDomain& dom, FEDataStream& a)
+{
+    FESolidMaterial* pme = dom.GetMaterial()->ExtractProperty<FESolidMaterial>();
+    if ((pme == 0) || pme->IsRigid()) return false;
+    FEDamageCriterionDeshpandeFleck* pmd = pme->ExtractProperty<FEDamageCriterionDeshpandeFleck>();
+    if (pmd == nullptr) return false;
+
+    writeAverageElementValue<double>(dom, a, [&pmd](const FEMaterialPoint& mp) {
+        double beta = pmd->m_beta(mp);
+        const FEElasticMaterialPoint& ep = *mp.ExtractData< FEElasticMaterialPoint>();
+        mat3ds s = ep.m_s;  // Cauchy stress
+        double se = sqrt((pow(s.xx()-s.yy(),2) + pow(s.yy()-s.zz(),2) + pow(s.zz()-s.xx(),2)
+                           + 6*(pow(s.xy(),2) + pow(s.yz(),2) + pow(s.xz(),2)))/2);
+        double sm = s.tr()/3;
+        double Phi = sqrt((se*se+pow(3*beta*sm,2))/(1+beta*beta));
+        return Phi;
+        });
+
+    return true;
 }
 
 //-----------------------------------------------------------------------------

@@ -271,3 +271,73 @@ double FEDamageCriterionONS::DamageCriterion(FEMaterialPoint& mp)
     
     return ons;
 }
+
+//-----------------------------------------------------------------------------
+// Drucker-Prager yield criterion
+BEGIN_FECORE_CLASS(FEDamageCriterionDruckerPrager, FEDamageCriterion)
+    ADD_PARAMETER(m_b, "b");
+END_FECORE_CLASS();
+
+double FEDamageCriterionDruckerPrager::DamageCriterion(FEMaterialPoint& pt)
+{
+    FEElasticMaterial* m_pMat = dynamic_cast<FEElasticMaterial*>(GetParent());
+    FEElasticMaterial* m_pBase = m_pMat->GetElasticMaterial();
+    mat3ds s = m_pBase->Stress(pt);
+    double se = sqrt((SQR(s.xx()-s.yy()) + SQR(s.yy()-s.zz()) + SQR(s.zz()-s.xx())
+                       + 6*(SQR(s.xy()) + SQR(s.yz()) + SQR(s.xz())))/2);
+    double sm = s.tr()/3;
+    double b = m_b(pt);
+    double Phi = se - b*sm;
+    
+    return Phi;
+}
+
+//-----------------------------------------------------------------------------
+//! criterion tangent with respect to stress
+mat3ds FEDamageCriterionDruckerPrager::CriterionStressTangent(FEMaterialPoint& pt)
+{
+    FEElasticMaterial* m_pMat = dynamic_cast<FEElasticMaterial*>(GetParent());
+    FEElasticMaterial* m_pBase = m_pMat->GetElasticMaterial();
+    mat3ds s = m_pBase->Stress(pt);
+    double se = sqrt((SQR(s.xx()-s.yy()) + SQR(s.yy()-s.zz()) + SQR(s.zz()-s.xx())
+                       + 6*(SQR(s.xy()) + SQR(s.yz()) + SQR(s.xz())))/2);
+    double sm = s.tr()/3;
+    double b = m_b(pt);
+    mat3dd I(1);
+    return s.dev()*(1.5/se) - I*b/(3*sqrt(3));
+}
+
+//-----------------------------------------------------------------------------
+// Deshpande-Fleck yield criterion
+BEGIN_FECORE_CLASS(FEDamageCriterionDeshpandeFleck, FEDamageCriterion)
+    ADD_PARAMETER(m_beta, "beta");
+END_FECORE_CLASS();
+
+double FEDamageCriterionDeshpandeFleck::DamageCriterion(FEMaterialPoint& pt)
+{
+    FEElasticMaterial* m_pMat = dynamic_cast<FEElasticMaterial*>(GetParent());
+    FEElasticMaterial* m_pBase = m_pMat->GetElasticMaterial();
+    mat3ds s = m_pBase->Stress(pt);
+    double se = sqrt((SQR(s.xx()-s.yy()) + SQR(s.yy()-s.zz()) + SQR(s.zz()-s.xx())
+                      + 6*(SQR(s.xy()) + SQR(s.yz()) + SQR(s.xz())))/2);
+    double sm = s.tr()/3;
+    double beta = m_beta(pt);
+    double Phi = sqrt((se*se+pow(3*beta*sm,2))/(1+beta*beta));
+
+    return Phi;
+}
+
+//-----------------------------------------------------------------------------
+//! Deshpande-Fleck criterion tangent with respect to stress
+mat3ds FEDamageCriterionDeshpandeFleck::CriterionStressTangent(FEMaterialPoint& pt)
+{
+    FEElasticMaterial* m_pMat = dynamic_cast<FEElasticMaterial*>(GetParent());
+    FEElasticMaterial* m_pBase = m_pMat->GetElasticMaterial();
+    mat3ds s = m_pBase->Stress(pt);
+    double se = sqrt((SQR(s.xx()-s.yy()) + SQR(s.yy()-s.zz()) + SQR(s.zz()-s.xx())
+                      + 6*(SQR(s.xy()) + SQR(s.yz()) + SQR(s.xz())))/2);
+    double sm = s.tr()/3;
+    double beta = m_beta(pt);
+    mat3dd I(1);
+    return (s.dev()/2+I*(beta*beta*sm))*(3/(sqrt(se*se+pow(3*beta*sm,2))*sqrt(1+beta*beta)));
+}

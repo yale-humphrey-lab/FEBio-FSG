@@ -169,6 +169,7 @@ BEGIN_FECORE_CLASS(FEContactPotential, FEContactInterface)
 	ADD_PARAMETER(m_wtol, "w_tol");
 	ADD_PARAMETER(m_checkIntersections, "check_intersections");
 	ADD_PARAMETER(m_integrationRule, "integration_rule")->setEnums("default\0higher-order\0");
+	ADD_PARAMETER(m_excludeNeighbors, "exclude_neighbors");
 END_FECORE_CLASS();
 
 FEContactPotential::FEContactPotential(FEModel* fem) : FEContactInterface(fem), m_surf1(fem), m_surf2(fem)
@@ -215,6 +216,18 @@ static bool is_neighbor(FESurfaceElement& e1, FESurfaceElement& e2)
 	}
 	return false;
 }
+
+static bool is_same(FESurfaceElement& e1, FESurfaceElement& e2)
+{
+	int n1 = e1.Nodes();
+	int n2 = e2.Nodes();
+	for (int i = 0; i < n1; ++i)
+	{
+		if (e1.m_node[i] != e2.m_node[i]) return false;
+	}
+	return true;
+}
+
 
 struct BOX
 {
@@ -425,7 +438,7 @@ public:
 				{
 					FECPContactPoint& mp = static_cast<FECPContactPoint&>(*el.GetMaterialPoint(n));
 					Cell* c = FindCell(mp.m_rt); assert(c);
-//					if (c == nullptr) return false;
+					if (c == nullptr) continue;
 					omp_set_lock(lock + c->id);
 					c->add(&el);
 					omp_unset_lock(lock + c->id);
@@ -490,21 +503,48 @@ FEContactPotential::~FEContactPotential()
 void FEContactPotential::BuildNeighborTable()
 {
 	m_elemNeighbors.resize(m_surf1.Elements());
-	for (int i = 0; i < m_surf1.Elements(); ++i)
+
+	if (m_excludeNeighbors)
 	{
-		FESurfaceElement& el1 = m_surf1.Element(i);
-		if (el1.isActive())
+		// build the full neighbor element list.
+		for (int i = 0; i < m_surf1.Elements(); ++i)
 		{
-
-			set<FESurfaceElement*>& nbrList = m_elemNeighbors[i];
-			nbrList.clear();
-
-			for (int j = 0; j < m_surf2.Elements(); ++j)
+			FESurfaceElement& el1 = m_surf1.Element(i);
+			if (el1.isActive())
 			{
-				FESurfaceElement& el2 = m_surf2.Element(j);
-				if (el2.isActive() && is_neighbor(el1, el2))
+				set<FESurfaceElement*>& nbrList = m_elemNeighbors[i];
+				nbrList.clear();
+
+				for (int j = 0; j < m_surf2.Elements(); ++j)
 				{
-					nbrList.insert(&el2);
+					FESurfaceElement& el2 = m_surf2.Element(j);
+					if (el2.isActive() && is_neighbor(el1, el2))
+					{
+						nbrList.insert(&el2);
+					}
+				}
+			}
+		}
+	}
+	else
+	{
+		// If we don't exclude neighbors, we just build a list of each element itself.
+		// Just to ensure that the element is not included in the case of self-contact.
+		for (int i = 0; i < m_surf1.Elements(); ++i)
+		{
+			FESurfaceElement& el1 = m_surf1.Element(i);
+			if (el1.isActive())
+			{
+				set<FESurfaceElement*>& nbrList = m_elemNeighbors[i];
+				nbrList.clear();
+
+				for (int j = 0; j < m_surf2.Elements(); ++j)
+				{
+					FESurfaceElement& el2 = m_surf2.Element(j);
+					if (el2.isActive() && ::is_same(el1, el2))
+					{
+						nbrList.insert(&el2);
+					}
 				}
 			}
 		}
@@ -575,6 +615,7 @@ void FEContactPotential::Update()
 				for (int l = 0; l < nc; ++l)
 				{
 					Grid::Cell* cl = c[l];
+					if (cl == nullptr) continue;
 					for (FESurfaceElement* el2 : cl->m_elemList)
 					{
 						// make sure we did not process this element yet
@@ -1062,7 +1103,8 @@ bool FEContactPotential::CheckIntersections(FEContactPotential::Grid& g)
 
 				for (int k = 0; k < nc; ++k)
 				{
-					Grid::Cell* cl = c[k];
+					Grid::Cell* cl = c[k]; assert(cl);
+					if (cl == nullptr) continue;
 					for (FESurfaceElement* el2 : cl->m_elemList)
 					{
 						FESurfaceElement& el = *el2;

@@ -4,6 +4,10 @@ TARGET_DIR="${TARGET_DIR:-febio4-sdk}"
 FEBIO_REPO="${FEBIO_REPO:-.}"
 mkdir -p ${TARGET_DIR}/{include,lib}
 
+# Copy in FEBioConfig.cmake
+mkdir -p ${TARGET_DIR}/lib/cmake/FEBio
+cp $FEBIO_REPO/FEBioConfig.cmake ${TARGET_DIR}/lib/cmake/FEBio
+
 sdkDirs=(
     FECore
     FEBioMech
@@ -12,7 +16,6 @@ sdkDirs=(
     FEBioRVE
     FEBioPlot
     FEBioXML
-    XML
     FEBioLib
     FEAMR
     FEBioOpt
@@ -25,9 +28,8 @@ sdkLibs=(
     libfebiomix.dylib
     libfebiofluid.dylib
     libfebiorve.dylib
-    libfebioplot.a
-    libfebioxml.a
-    libxml.a
+    libfebioplot.dylib
+    libfebioxml.dylib
     libfebiolib.dylib
     libfeamr.dylib
     libfebioopt.dylib

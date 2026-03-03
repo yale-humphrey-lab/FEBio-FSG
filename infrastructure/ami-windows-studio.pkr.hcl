@@ -75,7 +75,7 @@ source "amazon-ebs" "windows" {
   launch_block_device_mappings {
     device_name           = "/dev/sda1"
     volume_size           = 150
-    volume_type           = "gp2"
+    volume_type           = "gp3"
     delete_on_termination = true
   }
 }
@@ -103,35 +103,19 @@ build {
     env    = local.environment
   }
 
+  # cmake
   provisioner "powershell" {
-    script = "./common/windows/msmpi.ps1"
+    script = "./common/windows/cmake.ps1"
     env    = local.environment
   }
+
+#   provisioner "powershell" {
+#     script = "./common/windows/msmpi.ps1"
+#     env    = local.environment
+#   }
 
   provisioner "powershell" {
     script = "./common/windows/aws.ps1"
-    env    = local.environment
-  }
-
-  # qt
-  provisioner "windows-shell" {
-    script = "./common/windows/qt.bat"
-    env    = local.environment
-  }
-
-  provisioner "powershell" {
-    script = "./common/windows/install-builder.ps1"
-    env    = local.environment
-  }
-
-  # Lua 5.3
-  provisioner "powershell" {
-    script = "./common/windows/lua.ps1"
-    env    = local.environment
-  }
-
-  provisioner "powershell" {
-    script = "./common/windows/ffmpeg.ps1"
     env    = local.environment
   }
 
@@ -149,6 +133,40 @@ build {
 
   provisioner "powershell" {
     script = "./common/windows/vcpkg-package-install.ps1"
+    env    = local.environment
+  }
+
+  # Lua 5.3
+  provisioner "powershell" {
+    script = "./common/windows/lua.ps1"
+    env    = local.environment
+  }
+
+  # itk
+  provisioner "windows-shell" {
+    script = "./common/windows/itk.bat"
+    env    = local.environment
+  }
+
+  # sitk
+  provisioner "windows-shell" {
+    script = "./common/windows/sitk.bat"
+    env    = local.environment
+  }
+
+  # qt
+  provisioner "windows-shell" {
+    script = "./common/windows/qt.bat"
+    env    = local.environment
+  }
+
+  provisioner "powershell" {
+    script = "./common/windows/install-builder.ps1"
+    env    = local.environment
+  }
+
+  provisioner "powershell" {
+    script = "./common/windows/ffmpeg.ps1"
     env    = local.environment
   }
 
@@ -173,18 +191,6 @@ build {
   # tetgen
   provisioner "windows-shell" {
     script = "./common/windows/tetgen.bat"
-    env    = local.environment
-  }
-
-  # itk
-  provisioner "windows-shell" {
-    script = "./common/windows/itk.bat"
-    env    = local.environment
-  }
-
-  # sitk
-  provisioner "windows-shell" {
-    script = "./common/windows/sitk.bat"
     env    = local.environment
   }
 

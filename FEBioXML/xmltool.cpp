@@ -26,6 +26,8 @@ SOFTWARE.*/
 #include "stdafx.h"
 #include "xmltool.h"
 #include <FECore/FECoreKernel.h>
+#include <FECore/FEScalarValuator.h>
+#include <FECore/FEModelParam.h>
 
 int enumValue(const char* val, const char* szenum);
 bool is_number(const char* sz);
@@ -76,7 +78,7 @@ bool parseEnumParam(FEParam* pp, const char* val)
 
 //-----------------------------------------------------------------------------
 //! This function parses a parameter list
-bool fexml::readParameter(XMLTag& tag, FEParameterList& paramList, const char* paramName)
+bool fexml::readParameter(XMLTag& tag, FEParameterList& paramList, const char* paramName, FECoreBase* parent)
 {
 	// see if we can find this parameter
 	FEParam* pp = paramList.FindFromName((paramName == 0 ? tag.Name() : paramName));
@@ -103,6 +105,36 @@ bool fexml::readParameter(XMLTag& tag, FEParameterList& paramList, const char* p
 		}
 		break;
 		case FE_PARAM_BOOL    : { bool b; tag.value(b); pp->value<bool>() = b; } break;
+		case FE_PARAM_STD_STRING: { std::string s; tag.value(s); pp->value<std::string>() = s; } break;
+		case FE_PARAM_DOUBLE_MAPPED:
+		{
+			if (parent == nullptr) return false;
+
+			// get the model parameter
+			FEParamDouble& p = pp->value<FEParamDouble>();
+
+			// get the type
+			const char* sztype = tag.AttributeValue("type", true);
+
+			// if the type is not specified, we'll try to determine if 
+			// it's a math expression or a const
+			if (sztype == 0)
+			{
+				const char* szval = tag.szvalue();
+				sztype = (is_number(szval) ? "const" : "math");
+			}
+
+			// allocate valuator
+			FEScalarValuator* val = fecore_new<FEScalarValuator>(sztype, parent->GetFEModel());
+			if (val == nullptr) throw XMLReader::InvalidAttributeValue(tag, "type", sztype);
+
+			// read the parameter list
+			readParameterList(tag, val);
+
+			// assign the valuator to the parameter
+			p.setValuator(val);
+		}
+		break;
 		default:
 			assert(false);
 			return false;
@@ -172,11 +204,11 @@ void fexml::readList(XMLTag& tag, vector<int>& l)
 
 bool fexml::readParameterList(XMLTag& tag, FECoreBase* pc)
 {
-	// make sure this tag has children
-	if (tag.isleaf()) return true;
-
 	// read attribute parameters
 	if (!readAttributeParams(tag, pc)) return false;
+
+	// make sure this tag has children
+	if (tag.isleaf()) return true;
 
 	// process the parameter lists
 	++tag;
@@ -240,7 +272,7 @@ bool fexml::readAttributeParams(XMLTag& tag, FECoreBase* pc)
 bool fexml::readParameter(XMLTag& tag, FECoreBase* pc)
 {
 	FEParameterList& PL = pc->GetParameterList();
-	if (readParameter(tag, PL) == false)
+	if (readParameter(tag, PL, nullptr, pc) == false)
 	{
 		// see if this is a property
 		// if we get here, the parameter is not found.
@@ -249,16 +281,36 @@ bool fexml::readParameter(XMLTag& tag, FECoreBase* pc)
 		if (n >= 0)
 		{
 			FEProperty* prop = pc->PropertyClass(n);
-			const char* sztype = tag.AttributeValue("type");
+			const char* sztype = tag.AttributeValue("type", true);
 
-			// try to allocate the class
-			FECoreBase* pp = fecore_new<FECoreBase>(prop->GetSuperClassID(), sztype, pc->GetFEModel());
-			if (pp == nullptr) throw XMLReader::InvalidAttributeValue(tag, "type", sztype);
+			if (sztype)
+			{
+				// try to allocate the class
+				FECoreBase* pp = fecore_new<FECoreBase>(prop->GetSuperClassID(), sztype, pc->GetFEModel());
+				if (pp == nullptr) throw XMLReader::InvalidAttributeValue(tag, "type", sztype);
 
-			prop->SetProperty(pp);
+				prop->SetProperty(pp);
 
-			// read the property data
-			readParameterList(tag, pp);
+				// read the property data
+				readParameterList(tag, pp);
+			}
+			else if (prop->Flags() & FEProperty::Fixed)
+			{
+				if (prop->IsArray())
+				{
+					FECoreBase* pc = prop->get(prop->size());
+					readParameterList(tag, pc);
+				}
+				else
+				{
+					FECoreBase* pc = prop->get(0);
+					readParameterList(tag, pc);
+				}
+			}
+			else
+			{
+				throw XMLReader::MissingAttribute(tag, "type");
+			}
 		}
 		else throw XMLReader::InvalidTag(tag);
 	}

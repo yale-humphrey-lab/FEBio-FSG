@@ -3,7 +3,7 @@ listed below.
 
 See Copyright-FEBio.txt for details.
 
-Copyright (c) 2021 University of Utah, The Trustees of Columbia University in
+Copyright (c) 2025 University of Utah, The Trustees of Columbia University in
 the City of New York, and others.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -23,5 +23,19 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.*/
+#pragma once
+#include "FELogData.h"
 
-void ping();
+class FENode;
+
+//! This is the base class for a node data value.
+class FECORE_API FELogNodeData : public FELogData
+{
+	FECORE_SUPER_CLASS(FELOGNODEDATA_ID)
+	FECORE_BASE_CLASS(FELogNodeData)
+
+public:
+	FELogNodeData(FEModel* fem);
+	virtual ~FELogNodeData();
+	virtual double value(const FENode& node) = 0;
+};
